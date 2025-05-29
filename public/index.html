@@ -1,50 +1,26 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6/NlyAAAACXBIWXMAAAsTAAALEwEAmpwYAAADnElEQVR4nO1Z+0/UQBDefx29aFTwJBGRQ41yQAyCqIkoCYYoyBsEeUZE/MHwkEcUkGt73Y75So5ce+Xa7fYVli+Z5NLrzs7XTuebThkpBkaKgZFiYKQYGCkGRoqBkWJgpBgYKQZGioGltbFlES0sm/Soy6AbzRo1NIoZ1mDt9BeTOM844eMTi9qLujDJi6xQ1G2fmSTMOdkBRkW2Yu2deqA7zShhzCyYkZOt2OyCmT3C3zY4dfYadP3uWZBdfQYdHQdLx2r8PbKoq9dwEH7cbWS3aO0dWDZxBB4WWFtN+FqTRqen1uWWpbYOZz1YWuWXm/CHkbKD8Kt35WgIc040NZe8bvphcs5ZBJtadXnCxydWpFLipZsn/860ueWJTvcKOt26r50XNvyGNbfr9PCZTt0vDXozWKb3w2W63VIb19aOFZ4wT1A3O3qcVTesjUyY4QnPzCenm4srPBK/eHyQ6qEIQ9uqncWpm5AUSEtUF3R5jYsR9gogbt10X2Cpx6aoixFeXHWmGDRPFvuHFmkh3JRKRNu7Fn1dMc87NTyrOI6MG500KZd3Es7lNTHC/QNOjYPmZQW6x0UDafddFiIMTateDB3OMnCnQxPe2qldfKdFp8Hhsq2B0EJoIrSxopOV8242azQ+k/zFQT0ITXhkIrwcQU8x0Ui6UxubDpnSk7NmqKBgKCaHf6zEO7WSRjVFqyEI4aU1OfHveW2k1qkVXxjihAuSwblfz5Ls1LC3MOGch5Z9njLtCniR3jkaiVKKnVqJaholX8JuEiAYRO88A8hApyZM2OtueOkd7OOYGXun5p5wYI9qIIbKf/k2PV7Cv7at2Ds194QDe1Tj975lv0+D7Pomjy+lUezc2tv4IPpOTXTCIUwYBQoE6xUtTCncxUqmU4tywiFM2M9QONypLNupRTnhiJxwd1/t8HtColOLesIROWG8n/qJf1LmNeEQJry7Z9HGT25/2sQbEJ5BVEa0ca1PdTo4dKZzHG2kzITDlzDKeT0d84NMp1bPgvjxmnD4El7/wW2iF+mYH2Q6tXoW1I8fGEUMdwBeH6pxTJRwUD+pEz4S6NTqWVA/qRMeVS2lcwE6taBFK4if1Ak3JGxXhF24usOycKcY3k+/b3KaXzLp07hJb4fK9LzfsEe5BY/vwTD8xjH8h3NwLtYMDJVtH/AFn/CdekrnJTu1uPdjUQcg26nFvR8jxcBIMTBSDIwUAyPFwNIOIGn8B7rl67E92qQIAAAAAElFTkSuQmCC">
-  <title>Car Auction Yearly Price Chart</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="css/style.css" />
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
-  <div class="container">
-    <h1>Car Auction: Average Price per Model Year</h1>
-
-    <form id="search-form" autocomplete="off">
-      <div class="form-group">
-        <label for="make-input">Make</label>
-        <input type="text" id="make-input" placeholder="e.g. Volkswagen" required />
-      </div>
-      <div class="form-group">
-        <label for="model-input">Model</label>
-        <input type="text" id="model-input" placeholder="e.g. Golf GTI" required />
-      </div>
-      <div class="form-group">
-        <label for="year-from-input">Year From</label>
-        <input type="number" id="year-from-input" min="1980" max="2099" value="2015" required />
-      </div>
-      <div class="form-group">
-        <label for="year-to-input">Year To</label>
-        <input type="number" id="year-to-input" min="1980" max="2099" value="2021" required />
-      </div>
-      <div class="form-group" style="min-width:120px;max-width:160px;">
-        <button type="submit" id="search-btn">Search</button>
-      </div>
-    </form>
-
-    <div id="filter-panel" style="display:none;"></div>
-    <div id="chart-container" style="display:none;">
-      <canvas id="barChart" height="120"></canvas>
-    </div>
-    <div id="sort-panel" style="display:none;"></div>
-    <div id="car-list">
-        <div class="hint">Enter search criteria above and click "Search".</div>
-    </div>
-  </div>
-
-  <script type="module" src="js/main.js"></script>
-</body>
+    <head>
+        <meta charset="UTF-8" />
+        <link rel="icon" href="/assets/favicon.png" />
+        <title>Car Auction Yearly Price Chart</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <!-- Chart.js CDN -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link rel="stylesheet" href="/css/styles.css" />
+    </head>
+    <body>
+        <div class="container">
+            <h1>Car Auction: Average Price per Model Year</h1>
+            <label for="file-input">Select your exported JSON file:</label>
+            <input type="file" id="file-input" accept="application/json" />
+            <div id="filter-panel" style="display: none"></div>
+            <div id="chart-container" style="display: none">
+                <canvas id="barChart" height="120"></canvas>
+            </div>
+            <div id="sort-panel" style="display: none"></div>
+            <div id="car-list"></div>
+        </div>
+        <script src="/js/main.js"></script>
+    </body>
 </html>
