@@ -494,8 +494,9 @@ function toggleHelp() {
 }
 
 function copyBookmarklet() {
-  const bookmarkletCode =
-    document.getElementById("bookmarklet-code").textContent;
+  const bookmarkletCode = document
+    .getElementById("bookmarklet-code")
+    .textContent.trim();
   const copyButton = document.querySelector(".copy-button");
 
   navigator.clipboard
