@@ -295,3 +295,127 @@ input[type="file"] {
     background: #27272a;
     border-radius: 8px;
 }
+
+/* Help section styles */
+.help-section {
+    background: #18181b;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    border: 1px solid #232329;
+}
+
+.help-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-radius: 12px;
+}
+
+.help-header:hover {
+    background: #232329;
+}
+
+.help-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fafafa;
+    margin: 0;
+}
+
+.help-toggle {
+    font-size: 1.2rem;
+    color: #a1a1aa;
+    transition: transform 0.2s;
+}
+
+.help-toggle.expanded {
+    transform: rotate(180deg);
+}
+
+.help-content {
+    padding: 0 20px 20px 20px;
+    display: none;
+}
+
+.help-content.expanded {
+    display: block;
+}
+
+.help-step {
+    margin-bottom: 1.5rem;
+    color: #e4e4e7;
+    line-height: 1.6;
+}
+
+.help-step:last-child {
+    margin-bottom: 0;
+}
+
+.bookmarklet-container {
+    position: relative;
+    margin: 12px 0;
+}
+
+.bookmarklet-code {
+    background: #232329;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 12px 50px 12px 12px;
+    font-family: "Courier New", monospace;
+    font-size: 0.9rem;
+    color: #34d399;
+    word-break: break-all;
+    line-height: 1.4;
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+
+.copy-button {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: #34d399;
+    color: #18181b;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.copy-button:hover {
+    background: #059669;
+    color: #fff;
+}
+
+.copy-button.copied {
+    background: #10b981;
+    color: #fff;
+}
+
+@media (max-width: 900px) {
+    .help-header {
+        padding: 12px 16px;
+    }
+
+    .help-content {
+        padding: 0 16px 16px 16px;
+    }
+
+    .bookmarklet-code {
+        padding: 10px 45px 10px 10px;
+        font-size: 0.8rem;
+    }
+
+    .copy-button {
+        top: 6px;
+        right: 6px;
+        padding: 4px 8px;
+        font-size: 0.8rem;
+    }
+}

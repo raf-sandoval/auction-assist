@@ -478,3 +478,54 @@ document.getElementById("file-input").addEventListener("change", function (e) {
   };
   reader.readAsText(file);
 });
+
+// Help section functions
+function toggleHelp() {
+  const content = document.getElementById("help-content");
+  const toggle = document.getElementById("help-toggle");
+
+  if (content.classList.contains("expanded")) {
+    content.classList.remove("expanded");
+    toggle.classList.remove("expanded");
+  } else {
+    content.classList.add("expanded");
+    toggle.classList.add("expanded");
+  }
+}
+
+function copyBookmarklet() {
+  const bookmarkletCode =
+    document.getElementById("bookmarklet-code").textContent;
+  const copyButton = document.querySelector(".copy-button");
+
+  navigator.clipboard
+    .writeText(bookmarkletCode)
+    .then(() => {
+      const originalText = copyButton.textContent;
+      copyButton.textContent = "Copied!";
+      copyButton.classList.add("copied");
+
+      setTimeout(() => {
+        copyButton.textContent = originalText;
+        copyButton.classList.remove("copied");
+      }, 2000);
+    })
+    .catch((err) => {
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = bookmarkletCode;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+
+      const originalText = copyButton.textContent;
+      copyButton.textContent = "Copied!";
+      copyButton.classList.add("copied");
+
+      setTimeout(() => {
+        copyButton.textContent = originalText;
+        copyButton.classList.remove("copied");
+      }, 2000);
+    });
+}
