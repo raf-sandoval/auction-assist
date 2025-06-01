@@ -314,10 +314,6 @@ input[type="file"] {
     border-radius: 12px;
 }
 
-.help-header:hover {
-    background: #232329;
-}
-
 .help-title {
     font-size: 1.1rem;
     font-weight: 600;
@@ -395,6 +391,27 @@ input[type="file"] {
 .copy-button.copied {
     background: #10b981;
     color: #fff;
+}
+
+.help-content a {
+    color: #34d399;
+    text-decoration: none;
+    transition: color 0.15s;
+}
+
+.help-content a:hover {
+    color: #10b981;
+    text-decoration: underline;
+}
+
+.help-content a:visited {
+    color: #34d399;
+    text-decoration: none;
+}
+
+.help-content a:visited:hover {
+    color: #10b981;
+    text-decoration: underline;
 }
 
 @media (max-width: 900px) {
