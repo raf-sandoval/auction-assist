@@ -12,6 +12,49 @@
     <body>
         <div class="container">
             <h1>Car Auction: Average Price per Model Year</h1>
+
+            <!-- Help Section -->
+            <div class="help-section">
+                <div class="help-header" onclick="toggleHelp()">
+                    <h3 class="help-title">How to use this site</h3>
+                    <span class="help-toggle" id="help-toggle">▼</span>
+                </div>
+                <div class="help-content" id="help-content">
+                    <div class="help-step">
+                        <strong>1.</strong> Add a bookmark with the following
+                        URL:
+                        <div class="bookmarklet-container">
+                            <div class="bookmarklet-code" id="bookmarklet-code">
+                                javascript:(function(){var%20originalTitle=document.title;var%20c=0;var%20totalClicks=19;var%20b=document.querySelector('.btn-primary[href="#"]');document.title="%F0%9F%94%84%20Starting%20auction%20data%20extraction...";console.log("Starting%20auction%20data%20extraction...");var%20d=function(){var%20a=b.getAttribute("data-next-page");if(!a){document.title="%E2%9C%85%20All%20items%20loaded!%20Preparing%20download...";console.log("All%20items%20have%20been%20loaded!");setTimeout(e,500);return}b.click();c++;var%20progress=Math.round((c/totalClicks)*100);document.title="%F0%9F%94%84%20Loading%20data...%20"+c+"/"+totalClicks+"%20("+progress+"%)";console.log("Clicked%20"+c+"%20times%20("+progress+"%25%20complete)");if(c>=totalClicks){document.title="%E2%9C%85%20Loading%20complete!%20Preparing%20download...";setTimeout(e,500);return}setTimeout(d,1000)};var%20e=function(){document.title="%F0%9F%93%8A%20Processing%20auction%20data...";console.log("Processing%20auction%20data...");var%20a=[];var%20f=document.querySelectorAll(".item-horizontal");f.forEach(function(g,index){if(index%2510===0||index===f.length-1){var%20processProgress=Math.round(((index+1)/f.length)*100);document.title="%F0%9F%93%8A%20Processing%20items...%20"+(index+1)+"/"+f.length+"%20("+processProgress+"%)"}var%20h=g.querySelector(".name%20a");var%20i=h.textContent;var%20j=i.split("%20");var%20k=j[0];var%20l=j.slice(1).join("%20");var%20m=g.querySelector(".odo_desc").textContent;var%20n=m.match(/(\d+)k%20miles%20\((\d+)k%20km\)/);var%20o=n?parseInt(n[1])*1000:null;var%20p=n?parseInt(n[2])*1000:null;var%20q=g.querySelector(".loc_desc").textContent;var%20r=q.replace("Location:","").trim();var%20s=g.querySelector("li.damage-info:not(.doc_desc)").textContent.trim();var%20t=s.replace("Damage:","").trim();var%20u=g.querySelector(".status_item%20strong").textContent;var%20v=u.trim();var%20w=g.querySelector(".vin_title").textContent.trim();var%20x=g.querySelector(".price-box").textContent;var%20y=x.match(/\$([0-9,]+)/);var%20z=y?parseInt(y[1].replace(/,/g,"")):null;var%20A=g.querySelector(".name%20a").href;var%20B=g.querySelector(".date");var%20C=B.textContent.trim();var%20D=C.match(/(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(\d+)\s+(January|February|March|April|May|June|July|August|September|October|November|December),\s+(\d{4})/);var%20E=D?D[2]+"%20"+D[3]+"%20"+D[4]:null;var%20F=g.querySelector(".carousel-item.active");var%20G=F?F.getAttribute("data-src"):null;a.push({year:parseInt(k),model:l,miles:o,kilometers:p,location:r,damage:t,status:v,vin:w,price:z,url:A,auctionDate:E,imageUrl:G})});document.title="%F0%9F%92%BE%20Generating%20download%20file...";console.log("Generating%20download%20file...");var%20H=JSON.stringify(a,null,2);var%20I=new%20Blob([H],{type:"application/json"});var%20J=window.URL.createObjectURL(I);var%20K=(new%20Date).toISOString().split("T")[0];var%20L=document.createElement("a");L.href=J;L.download="car_auction_data_"+K+".json";document.body.appendChild(L);L.click();window.URL.revokeObjectURL(J);document.body.removeChild(L);document.title="%E2%9C%85%20Download%20complete!%20Refreshing%20page...";console.log("JSON%20file%20has%20been%20downloaded!%20Found%20"+a.length+"%20items.%20Refreshing%20page%20in%202%20seconds...");setTimeout(function(){document.title=originalTitle;location.reload()},2000);return%20a};d()})();
+                            </div>
+                            <button
+                                class="copy-button"
+                                onclick="copyBookmarklet()"
+                            >
+                                Copy
+                            </button>
+                        </div>
+                    </div>
+                    <div class="help-step">
+                        <strong>2.</strong> Log in to
+                        <a href="https://bid.cars/en/" target="_blank"
+                            >bid.cars</a
+                        >
+                        and open the archived auctions for the model you want.
+                        <strong>Create an account if you dont have one.</strong>
+                    </div>
+                    <div class="help-step">
+                        <strong>3.</strong> With the car list open, click on
+                        this new bookmark and keep the tab open. The tab title
+                        will show the scraping progress.
+                    </div>
+                    <div class="help-step">
+                        <strong>4.</strong> Download the .json file and upload
+                        it to this site!
+                    </div>
+                </div>
+            </div>
+
             <label for="file-input">Select your exported JSON file:</label>
             <input type="file" id="file-input" accept="application/json" />
             <div id="filter-panel" style="display: none"></div>
