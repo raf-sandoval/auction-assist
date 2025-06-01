@@ -370,7 +370,6 @@ input[type="file"] {
     word-break: break-all;
     line-height: 1.4;
     overflow-x: auto;
-    white-space: pre-wrap;
 }
 
 .copy-button {
