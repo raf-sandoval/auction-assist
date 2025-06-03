@@ -224,17 +224,19 @@ function applyFilters(data) {
 }
 
 function updateFilteredData() {
-  // Filter the data
   const filtered = applyFilters(carData);
-  // Group by year
   yearMap = groupByYear(filtered);
-  // If selectedYear is not present, clear selection
-  if (!yearMap[selectedYear]) selectedYear = null;
   renderChart(yearMap);
-  if (selectedYear) {
+
+  if (selectedYear && yearMap[selectedYear]) {
     showCarList(selectedYear, yearMap[selectedYear]);
+  } else if (selectedYear && !yearMap[selectedYear]) {
+    // Year was filtered out, show all years
+    selectedYear = null;
+    showCarList(null, filtered);
   } else {
-    showCarList(null, []);
+    // Show all years by default
+    showCarList(null, filtered);
   }
 }
 
@@ -312,10 +314,34 @@ function renderSortPanel() {
   const sortPanel = document.getElementById("sort-panel");
   sortPanel.innerHTML = "";
 
-  // Only show if there is a car list
-  if (!selectedYear || !currentCarList.length) {
+  if (!currentCarList.length) {
     sortPanel.style.display = "none";
     return;
+  }
+
+  // Show All Years button (only show when a specific year is selected)
+  if (selectedYear) {
+    const showAllBtn = document.createElement("button");
+    showAllBtn.textContent = "Show All Years";
+    showAllBtn.style.background = "#6366f1";
+    showAllBtn.style.color = "#fff";
+    showAllBtn.style.border = "none";
+    showAllBtn.style.borderRadius = "6px";
+    showAllBtn.style.padding = "7px 18px";
+    showAllBtn.style.fontSize = "1rem";
+    showAllBtn.style.fontWeight = "600";
+    showAllBtn.style.cursor = "pointer";
+    showAllBtn.style.transition = "background 0.15s";
+    showAllBtn.style.marginRight = "1rem";
+    showAllBtn.onmouseover = () => (showAllBtn.style.background = "#4f46e5");
+    showAllBtn.onmouseout = () => (showAllBtn.style.background = "#6366f1");
+    showAllBtn.onclick = function () {
+      selectedYear = null;
+      updateBarColors();
+      const filtered = applyFilters(carData);
+      showCarList(null, filtered);
+    };
+    sortPanel.appendChild(showAllBtn);
   }
 
   // Sort by dropdown
@@ -349,7 +375,12 @@ function renderSortPanel() {
   applyBtn.onclick = function () {
     currentSort.by = sortBySelect.value;
     currentSort.order = orderSelect.value;
-    showCarList(selectedYear, yearMap[selectedYear]);
+    if (selectedYear) {
+      showCarList(selectedYear, yearMap[selectedYear]);
+    } else {
+      const filtered = applyFilters(carData);
+      showCarList(null, filtered);
+    }
   };
 
   sortPanel.appendChild(sortByLabel);
@@ -408,49 +439,58 @@ function parseAuctionDate(dateStr) {
 
 function showCarList(year, cars) {
   const listDiv = document.getElementById("car-list");
-  currentCarList = cars || [];
-  renderSortPanel();
 
-  if (!year) {
-    listDiv.innerHTML = `<div class="hint">Select a year in the graph to show a list of vehicles.</div>`;
-    return;
-  }
-  if (!cars || !cars.length) {
-    listDiv.innerHTML = `<p>No cars found for year ${year}.</p>`;
-    return;
-  }
-  // Sort by current sort
-  cars = sortCars(cars);
+  if (year) {
+    // Showing specific year
+    currentCarList = cars || [];
+    renderSortPanel();
 
-  let html = `<h2 style="margin-bottom:1rem;color:#fafafa;">${year} - ${cars.length} cars</h2>`;
-  html += cars
+    if (!cars || !cars.length) {
+      listDiv.innerHTML = `<p>No cars found for year ${year}.</p>`;
+      return;
+    }
+
+    cars = sortCars(cars);
+    let html = `<h2 style="margin-bottom:1rem;color:#fafafa;">${year} - ${cars.length} cars</h2>`;
+    html += generateCarListHTML(cars);
+    listDiv.innerHTML = html;
+  } else {
+    // Showing all years
+    currentCarList = cars || [];
+    renderSortPanel();
+
+    if (!cars || !cars.length) {
+      listDiv.innerHTML = `<div class="hint">No cars match your current filters.</div>`;
+      return;
+    }
+
+    cars = sortCars(cars);
+    let html = `<h2 style="margin-bottom:1rem;color:#fafafa;">All Years - ${cars.length} cars</h2>`;
+    html += generateCarListHTML(cars);
+    listDiv.innerHTML = html;
+  }
+}
+
+function generateCarListHTML(cars) {
+  return cars
     .map(
       (car) => `
     <div class="car-item" onclick="window.open('${car.url}', '_blank')">
-      <img class="car-img" src="${
-        car.imageUrl || ""
-      }" alt="car" loading="lazy" />
+      <img class="car-img" src="${car.imageUrl || ""}" alt="car" loading="lazy" />
       <div class="car-details">
-        <div class="car-value car-price">$${
-          car.price ? car.price.toLocaleString() : "N/A"
-        }</div>
-        <div class="car-value">${
-          car.miles ? car.miles.toLocaleString() + " mi" : ""
-        }</div>
+        <div class="car-value car-price">$${car.price ? car.price.toLocaleString() : "N/A"}</div>
+        <div class="car-value">${car.miles ? car.miles.toLocaleString() + " mi" : ""}</div>
         <div class="car-value">${car.damage || ""}</div>
         <div class="car-value">${car.status || ""}</div>
         <div class="car-value">${car.location || ""}</div>
-        <div class="car-value"><span class="car-vin">${
-          car.vin || ""
-        }</span></div>
+        <div class="car-value"><span class="car-vin">${car.vin || ""}</span></div>
         <div class="car-value">${car.auctionDate || ""}</div>
-        <div></div>
+        <div class="car-value" style="color: #a1a1aa;">${car.year || ""}</div>
       </div>
     </div>
   `,
     )
     .join("");
-  listDiv.innerHTML = html;
 }
 
 // Event listeners
@@ -530,3 +570,147 @@ function copyBookmarklet() {
       }, 2000);
     });
 }
+
+// --- Price Toolbar Feature ---
+
+let priceToolbarTimeout = null;
+let priceToolbarMin = 0;
+let priceToolbarMax = 0;
+let priceToolbarValues = [];
+let priceToolbarSortedCars = [];
+
+function showPriceToolbar(cars) {
+  if (!cars || !cars.length) {
+    document.getElementById("price-toolbar").style.display = "none";
+    return;
+  }
+  // Get sorted prices and cars
+  priceToolbarSortedCars = [...cars].sort(
+    (a, b) => (a.price || 0) - (b.price || 0),
+  );
+  priceToolbarValues = priceToolbarSortedCars.map((car) => car.price || 0);
+  priceToolbarMin = priceToolbarValues[0];
+  priceToolbarMax = priceToolbarValues[priceToolbarValues.length - 1];
+
+  // Set min/max labels
+  document.getElementById("price-toolbar-min").textContent =
+    "$" + priceToolbarMin.toLocaleString();
+  document.getElementById("price-toolbar-max").textContent =
+    "$" + priceToolbarMax.toLocaleString();
+
+  // Set slider attributes
+  const slider = document.getElementById("price-toolbar-slider");
+  slider.min = 0;
+  slider.max = priceToolbarValues.length - 1;
+  slider.value = 0;
+
+  // Hide tooltip initially
+  hidePriceToolbarTooltip();
+
+  // Show toolbar
+  document.getElementById("price-toolbar").style.display = "";
+
+  // Scroll event
+  window.addEventListener("scroll", onPriceToolbarScroll);
+  slider.addEventListener("input", onPriceToolbarSliderInput);
+  slider.addEventListener("change", onPriceToolbarSliderChange);
+}
+
+function hidePriceToolbar() {
+  document.getElementById("price-toolbar").style.display = "none";
+  window.removeEventListener("scroll", onPriceToolbarScroll);
+}
+
+function onPriceToolbarSliderInput(e) {
+  const idx = parseInt(e.target.value, 10);
+  showPriceToolbarTooltip(idx);
+  scrollToCarByIndex(idx);
+  resetPriceToolbarTooltipTimeout();
+}
+
+function onPriceToolbarSliderChange(e) {
+  const idx = parseInt(e.target.value, 10);
+  showPriceToolbarTooltip(idx);
+  scrollToCarByIndex(idx);
+  resetPriceToolbarTooltipTimeout();
+}
+
+function showPriceToolbarTooltip(idx) {
+  const tooltip = document.getElementById("price-toolbar-tooltip");
+  const slider = document.getElementById("price-toolbar-slider");
+  const value = priceToolbarValues[idx];
+  document.getElementById("price-toolbar-tooltip-value").textContent =
+    "$" + value.toLocaleString();
+
+  // Position tooltip above the slider thumb
+  const sliderRect = slider.getBoundingClientRect();
+  const min = parseInt(slider.min, 10);
+  const max = parseInt(slider.max, 10);
+  const percent = (idx - min) / (max - min || 1);
+  const sliderWidth = slider.offsetWidth;
+  const thumbX = percent * sliderWidth;
+
+  tooltip.style.left = `${thumbX}px`;
+  tooltip.style.display = "block";
+  tooltip.style.opacity = "0.95";
+}
+
+function hidePriceToolbarTooltip() {
+  const tooltip = document.getElementById("price-toolbar-tooltip");
+  tooltip.style.display = "none";
+}
+
+function resetPriceToolbarTooltipTimeout() {
+  clearTimeout(priceToolbarTimeout);
+  priceToolbarTimeout = setTimeout(hidePriceToolbarTooltip, 2000);
+}
+
+function scrollToCarByIndex(idx) {
+  // Find the car-item for this price
+  const car = priceToolbarSortedCars[idx];
+  if (!car) return;
+  // Find the car-item in the DOM by VIN (unique)
+  const vin = car.vin;
+  const carItems = document.querySelectorAll(".car-item");
+  for (let item of carItems) {
+    if (item.innerHTML.includes(vin)) {
+      item.scrollIntoView({ behavior: "smooth", block: "center" });
+      break;
+    }
+  }
+}
+
+// When user scrolls, update slider to match the car in view
+function onPriceToolbarScroll() {
+  const carItems = document.querySelectorAll(".car-item");
+  if (!carItems.length) return;
+  let closestIdx = 0;
+  let minDist = Infinity;
+  const viewportTop = window.scrollY;
+  for (let i = 0; i < carItems.length; i++) {
+    const rect = carItems[i].getBoundingClientRect();
+    const dist = Math.abs(rect.top);
+    if (dist < minDist) {
+      minDist = dist;
+      closestIdx = i;
+    }
+  }
+  // Update slider value without triggering scroll
+  const slider = document.getElementById("price-toolbar-slider");
+  slider.value = closestIdx;
+  showPriceToolbarTooltip(closestIdx);
+  resetPriceToolbarTooltipTimeout();
+}
+
+// --- Integrate with car list rendering ---
+
+// Modify showCarList to call showPriceToolbar/hidePriceToolbar
+const originalShowCarList = showCarList;
+showCarList = function (year, cars) {
+  originalShowCarList(year, cars);
+  if (cars && cars.length) {
+    showPriceToolbar(cars);
+  } else {
+    hidePriceToolbar();
+  }
+};
