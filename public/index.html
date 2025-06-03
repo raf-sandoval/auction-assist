@@ -65,5 +65,28 @@
             <div id="car-list"></div>
         </div>
         <script src="/js/main.js"></script>
+        <div id="price-toolbar" class="price-toolbar" style="display: none">
+            <div class="price-toolbar-card">
+                <span id="price-toolbar-min" class="price-toolbar-value"></span>
+                <div class="price-toolbar-slider-container">
+                    <input
+                        type="range"
+                        id="price-toolbar-slider"
+                        min="0"
+                        max="100"
+                        value="0"
+                        step="1"
+                    />
+                    <div
+                        id="price-toolbar-tooltip"
+                        class="price-toolbar-tooltip"
+                        style="display: none"
+                    >
+                        <span id="price-toolbar-tooltip-value"></span>
+                    </div>
+                </div>
+                <span id="price-toolbar-max" class="price-toolbar-value"></span>
+            </div>
+        </div>
     </body>
 </html>

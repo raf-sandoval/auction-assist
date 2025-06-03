@@ -435,3 +435,86 @@ input[type="file"] {
         font-size: 0.8rem;
     }
 }
+
+.price-toolbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.price-toolbar-card {
+    background: #232329;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -2px 16px #0004;
+    padding: 18px 32px 14px 32px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    min-width: 320px;
+    max-width: 600px;
+    width: 100%;
+    pointer-events: auto;
+}
+
+.price-toolbar-value {
+    color: #a1a1aa;
+    font-size: 1.1em;
+    min-width: 80px;
+    text-align: center;
+    font-family: "Inter", system-ui, sans-serif;
+}
+
+.price-toolbar-slider-container {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+#price-toolbar-slider {
+    width: 100%;
+    accent-color: #34d399;
+    height: 4px;
+    margin: 0 0;
+}
+
+.price-toolbar-tooltip {
+    position: absolute;
+    left: 0;
+    top: -38px;
+    transform: translateX(-50%);
+    background: #18181b;
+    color: #fafafa;
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 1.05em;
+    font-weight: 600;
+    box-shadow: 0 2px 8px #0003;
+    pointer-events: none;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+    opacity: 0.95;
+    z-index: 10;
+}
+
+@media (max-width: 600px) {
+    .price-toolbar-card {
+        padding: 10px 8px 8px 8px;
+        min-width: 0;
+        max-width: 100vw;
+        gap: 10px;
+    }
+    .price-toolbar-value {
+        min-width: 40px;
+        font-size: 0.95em;
+    }
+    .price-toolbar-tooltip {
+        font-size: 0.95em;
+        padding: 4px 10px;
+    }
+}

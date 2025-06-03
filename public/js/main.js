@@ -570,3 +570,147 @@ function copyBookmarklet() {
       }, 2000);
     });
 }
+
+// --- Price Toolbar Feature ---
+
+let priceToolbarTimeout = null;
+let priceToolbarMin = 0;
+let priceToolbarMax = 0;
+let priceToolbarValues = [];
+let priceToolbarSortedCars = [];
+
+function showPriceToolbar(cars) {
+  if (!cars || !cars.length) {
+    document.getElementById("price-toolbar").style.display = "none";
+    return;
+  }
+  // Get sorted prices and cars
+  priceToolbarSortedCars = [...cars].sort(
+    (a, b) => (a.price || 0) - (b.price || 0),
+  );
+  priceToolbarValues = priceToolbarSortedCars.map((car) => car.price || 0);
+  priceToolbarMin = priceToolbarValues[0];
+  priceToolbarMax = priceToolbarValues[priceToolbarValues.length - 1];
+
+  // Set min/max labels
+  document.getElementById("price-toolbar-min").textContent =
+    "$" + priceToolbarMin.toLocaleString();
+  document.getElementById("price-toolbar-max").textContent =
+    "$" + priceToolbarMax.toLocaleString();
+
+  // Set slider attributes
+  const slider = document.getElementById("price-toolbar-slider");
+  slider.min = 0;
+  slider.max = priceToolbarValues.length - 1;
+  slider.value = 0;
+
+  // Hide tooltip initially
+  hidePriceToolbarTooltip();
+
+  // Show toolbar
+  document.getElementById("price-toolbar").style.display = "";
+
+  // Scroll event
+  window.addEventListener("scroll", onPriceToolbarScroll);
+  slider.addEventListener("input", onPriceToolbarSliderInput);
+  slider.addEventListener("change", onPriceToolbarSliderChange);
+}
+
+function hidePriceToolbar() {
+  document.getElementById("price-toolbar").style.display = "none";
+  window.removeEventListener("scroll", onPriceToolbarScroll);
+}
+
+function onPriceToolbarSliderInput(e) {
+  const idx = parseInt(e.target.value, 10);
+  showPriceToolbarTooltip(idx);
+  scrollToCarByIndex(idx);
+  resetPriceToolbarTooltipTimeout();
+}
+
+function onPriceToolbarSliderChange(e) {
+  const idx = parseInt(e.target.value, 10);
+  showPriceToolbarTooltip(idx);
+  scrollToCarByIndex(idx);
+  resetPriceToolbarTooltipTimeout();
+}
+
+function showPriceToolbarTooltip(idx) {
+  const tooltip = document.getElementById("price-toolbar-tooltip");
+  const slider = document.getElementById("price-toolbar-slider");
+  const value = priceToolbarValues[idx];
+  document.getElementById("price-toolbar-tooltip-value").textContent =
+    "$" + value.toLocaleString();
+
+  // Position tooltip above the slider thumb
+  const sliderRect = slider.getBoundingClientRect();
+  const min = parseInt(slider.min, 10);
+  const max = parseInt(slider.max, 10);
+  const percent = (idx - min) / (max - min || 1);
+  const sliderWidth = slider.offsetWidth;
+  const thumbX = percent * sliderWidth;
+
+  tooltip.style.left = `${thumbX}px`;
+  tooltip.style.display = "block";
+  tooltip.style.opacity = "0.95";
+}
+
+function hidePriceToolbarTooltip() {
+  const tooltip = document.getElementById("price-toolbar-tooltip");
+  tooltip.style.display = "none";
+}
+
+function resetPriceToolbarTooltipTimeout() {
+  clearTimeout(priceToolbarTimeout);
+  priceToolbarTimeout = setTimeout(hidePriceToolbarTooltip, 2000);
+}
+
+function scrollToCarByIndex(idx) {
+  // Find the car-item for this price
+  const car = priceToolbarSortedCars[idx];
+  if (!car) return;
+  // Find the car-item in the DOM by VIN (unique)
+  const vin = car.vin;
+  const carItems = document.querySelectorAll(".car-item");
+  for (let item of carItems) {
+    if (item.innerHTML.includes(vin)) {
+      item.scrollIntoView({ behavior: "smooth", block: "center" });
+      break;
+    }
+  }
+}
+
+// When user scrolls, update slider to match the car in view
+function onPriceToolbarScroll() {
+  const carItems = document.querySelectorAll(".car-item");
+  if (!carItems.length) return;
+  let closestIdx = 0;
+  let minDist = Infinity;
+  const viewportTop = window.scrollY;
+  for (let i = 0; i < carItems.length; i++) {
+    const rect = carItems[i].getBoundingClientRect();
+    const dist = Math.abs(rect.top);
+    if (dist < minDist) {
+      minDist = dist;
+      closestIdx = i;
+    }
+  }
+  // Update slider value without triggering scroll
+  const slider = document.getElementById("price-toolbar-slider");
+  slider.value = closestIdx;
+  showPriceToolbarTooltip(closestIdx);
+  resetPriceToolbarTooltipTimeout();
+}
+
+// --- Integrate with car list rendering ---
+
+// Modify showCarList to call showPriceToolbar/hidePriceToolbar
+const originalShowCarList = showCarList;
+showCarList = function (year, cars) {
+  originalShowCarList(year, cars);
+  if (cars && cars.length) {
+    showPriceToolbar(cars);
+  } else {
+    hidePriceToolbar();
+  }
+};
