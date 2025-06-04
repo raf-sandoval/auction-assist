@@ -381,6 +381,7 @@ function renderSortPanel() {
       const filtered = applyFilters(carData);
       showCarList(null, filtered);
     }
+    // Toolbar will automatically update via showCarList
   };
 
   sortPanel.appendChild(sortByLabel);
@@ -571,76 +572,154 @@ function copyBookmarklet() {
     });
 }
 
-// --- Price Toolbar Feature ---
+// --- Dynamic Toolbar Feature ---
 
-let priceToolbarTimeout = null;
-let priceToolbarMin = 0;
-let priceToolbarMax = 0;
-let priceToolbarValues = [];
-let priceToolbarSortedCars = [];
+let toolbarTimeout = null;
+let toolbarMin = 0;
+let toolbarMax = 0;
+let toolbarValues = [];
+let toolbarSortedCars = [];
+let toolbarSortType = "price"; // 'price', 'miles', 'auctionDate'
+let toolbarSortOrder = "asc"; // 'asc', 'desc'
 
-function showPriceToolbar(cars) {
+function showDynamicToolbar(cars) {
   if (!cars || !cars.length) {
     document.getElementById("price-toolbar").style.display = "none";
     return;
   }
-  // Get sorted prices and cars
-  priceToolbarSortedCars = [...cars].sort(
-    (a, b) => (a.price || 0) - (b.price || 0),
-  );
-  priceToolbarValues = priceToolbarSortedCars.map((car) => car.price || 0);
-  priceToolbarMin = priceToolbarValues[0];
-  priceToolbarMax = priceToolbarValues[priceToolbarValues.length - 1];
 
-  // Set min/max labels
+  // Update toolbar based on current sort
+  toolbarSortType = currentSort.by;
+  toolbarSortOrder = currentSort.order;
+
+  // Sort cars according to current sort settings
+  toolbarSortedCars = sortCars([...cars]);
+
+  // Extract values based on sort type
+  toolbarValues = toolbarSortedCars.map((car) => getToolbarValue(car));
+  toolbarMin = toolbarValues[0];
+  toolbarMax = toolbarValues[toolbarValues.length - 1];
+
+  // Set min/max labels with appropriate formatting
   document.getElementById("price-toolbar-min").textContent =
-    "$" + priceToolbarMin.toLocaleString();
+    formatToolbarValue(toolbarMin);
   document.getElementById("price-toolbar-max").textContent =
-    "$" + priceToolbarMax.toLocaleString();
+    formatToolbarValue(toolbarMax);
 
   // Set slider attributes
   const slider = document.getElementById("price-toolbar-slider");
   slider.min = 0;
-  slider.max = priceToolbarValues.length - 1;
+  slider.max = toolbarValues.length - 1;
   slider.value = 0;
 
   // Hide tooltip initially
-  hidePriceToolbarTooltip();
+  hideToolbarTooltip();
 
   // Show toolbar
   document.getElementById("price-toolbar").style.display = "";
 
-  // Scroll event
-  window.addEventListener("scroll", onPriceToolbarScroll);
-  slider.addEventListener("input", onPriceToolbarSliderInput);
-  slider.addEventListener("change", onPriceToolbarSliderChange);
+  // Update event listeners
+  updateToolbarEventListeners();
 }
 
-function hidePriceToolbar() {
+function getToolbarValue(car) {
+  switch (toolbarSortType) {
+    case "price":
+      return typeof car.price === "number" ? car.price : 0;
+    case "miles":
+      return typeof car.miles === "number" ? car.miles : 0;
+    case "auctionDate":
+      return parseAuctionDate(car.auctionDate);
+    default:
+      return 0;
+  }
+}
+
+function formatToolbarValue(value) {
+  switch (toolbarSortType) {
+    case "price":
+      return "$" + value.toLocaleString();
+    case "miles":
+      return value.toLocaleString() + " mi";
+    case "auctionDate":
+      return formatDateFromNumber(value);
+    default:
+      return value.toString();
+  }
+}
+
+function formatDateFromNumber(dateNum) {
+  if (!dateNum || dateNum === 0) return "N/A";
+  const str = dateNum.toString();
+  if (str.length !== 8) return "N/A";
+
+  const year = str.substring(0, 4);
+  const month = str.substring(4, 6);
+  const day = str.substring(6, 8);
+
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+  const monthName = months[parseInt(month) - 1] || "Jan";
+  return `${parseInt(day)} ${monthName} ${year}`;
+}
+
+function hideDynamicToolbar() {
   document.getElementById("price-toolbar").style.display = "none";
-  window.removeEventListener("scroll", onPriceToolbarScroll);
+  removeToolbarEventListeners();
 }
 
-function onPriceToolbarSliderInput(e) {
+function updateToolbarEventListeners() {
+  const slider = document.getElementById("price-toolbar-slider");
+
+  // Remove existing listeners
+  removeToolbarEventListeners();
+
+  // Add new listeners
+  window.addEventListener("scroll", onToolbarScroll);
+  slider.addEventListener("input", onToolbarSliderInput);
+  slider.addEventListener("change", onToolbarSliderChange);
+}
+
+function removeToolbarEventListeners() {
+  window.removeEventListener("scroll", onToolbarScroll);
+  const slider = document.getElementById("price-toolbar-slider");
+  slider.removeEventListener("input", onToolbarSliderInput);
+  slider.removeEventListener("change", onToolbarSliderChange);
+}
+
+function onToolbarSliderInput(e) {
   const idx = parseInt(e.target.value, 10);
-  showPriceToolbarTooltip(idx);
+  showToolbarTooltip(idx);
   scrollToCarByIndex(idx);
-  resetPriceToolbarTooltipTimeout();
+  resetToolbarTooltipTimeout();
 }
 
-function onPriceToolbarSliderChange(e) {
+function onToolbarSliderChange(e) {
   const idx = parseInt(e.target.value, 10);
-  showPriceToolbarTooltip(idx);
+  showToolbarTooltip(idx);
   scrollToCarByIndex(idx);
-  resetPriceToolbarTooltipTimeout();
+  resetToolbarTooltipTimeout();
 }
 
-function showPriceToolbarTooltip(idx) {
+function showToolbarTooltip(idx) {
   const tooltip = document.getElementById("price-toolbar-tooltip");
   const slider = document.getElementById("price-toolbar-slider");
-  const value = priceToolbarValues[idx];
+  const value = toolbarValues[idx];
   document.getElementById("price-toolbar-tooltip-value").textContent =
-    "$" + value.toLocaleString();
+    formatToolbarValue(value);
 
   // Position tooltip above the slider thumb
   const sliderRect = slider.getBoundingClientRect();
@@ -655,21 +734,22 @@ function showPriceToolbarTooltip(idx) {
   tooltip.style.opacity = "0.95";
 }
 
-function hidePriceToolbarTooltip() {
+function hideToolbarTooltip() {
   const tooltip = document.getElementById("price-toolbar-tooltip");
   tooltip.style.display = "none";
 }
 
-function resetPriceToolbarTooltipTimeout() {
-  clearTimeout(priceToolbarTimeout);
-  priceToolbarTimeout = setTimeout(hidePriceToolbarTooltip, 2000);
+function resetToolbarTooltipTimeout() {
+  clearTimeout(toolbarTimeout);
+  toolbarTimeout = setTimeout(hideToolbarTooltip, 2000);
 }
 
 function scrollToCarByIndex(idx) {
-  // Find the car-item for this price
-  const car = priceToolbarSortedCars[idx];
+  // Find the car-item for this sorted position
+  const car = toolbarSortedCars[idx];
   if (!car) return;
-  // Find the car-item in the DOM by VIN (unique)
+
+  // Find the car-item in the DOM by VIN (unique identifier)
   const vin = car.vin;
   const carItems = document.querySelectorAll(".car-item");
   for (let item of carItems) {
@@ -681,12 +761,13 @@ function scrollToCarByIndex(idx) {
 }
 
 // When user scrolls, update slider to match the car in view
-function onPriceToolbarScroll() {
+function onToolbarScroll() {
   const carItems = document.querySelectorAll(".car-item");
-  if (!carItems.length) return;
+  if (!carItems.length || !toolbarSortedCars.length) return;
+
   let closestIdx = 0;
   let minDist = Infinity;
-  const viewportTop = window.scrollY;
+
   for (let i = 0; i < carItems.length; i++) {
     const rect = carItems[i].getBoundingClientRect();
     const dist = Math.abs(rect.top);
@@ -695,22 +776,25 @@ function onPriceToolbarScroll() {
       closestIdx = i;
     }
   }
+
   // Update slider value without triggering scroll
   const slider = document.getElementById("price-toolbar-slider");
-  slider.value = closestIdx;
-  showPriceToolbarTooltip(closestIdx);
-  resetPriceToolbarTooltipTimeout();
+  if (closestIdx < toolbarValues.length) {
+    slider.value = closestIdx;
+    showToolbarTooltip(closestIdx);
+    resetToolbarTooltipTimeout();
+  }
 }
 
 // --- Integrate with car list rendering ---
 
-// Modify showCarList to call showPriceToolbar/hidePriceToolbar
+// Modify showCarList to call showDynamicToolbar/hideDynamicToolbar
 const originalShowCarList = showCarList;
 showCarList = function (year, cars) {
   originalShowCarList(year, cars);
   if (cars && cars.length) {
-    showPriceToolbar(cars);
+    showDynamicToolbar(cars);
   } else {
-    hidePriceToolbar();
+    hideDynamicToolbar();
   }
 };
