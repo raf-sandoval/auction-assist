@@ -65,6 +65,46 @@ function getPriceRange(arr) {
   return { min: 0, max: max };
 }
 
+function removeDuplicates(arr) {
+  const seen = new Set();
+  const duplicateCount = arr.length;
+  
+  const uniqueArr = arr.filter((car) => {
+    // Primary deduplication by VIN if available and not empty
+    if (car.vin && car.vin.trim() !== '' && car.vin !== 'N/A') {
+      if (seen.has(car.vin)) {
+        return false;
+      }
+      seen.add(car.vin);
+      return true;
+    }
+    
+    // Secondary deduplication by URL if VIN is not available
+    if (car.url && car.url.trim() !== '') {
+      if (seen.has(car.url)) {
+        return false;
+      }
+      seen.add(car.url);
+      return true;
+    }
+    
+    // Fallback deduplication by combination of key fields
+    const key = `${car.year}-${car.model}-${car.miles}-${car.location}-${car.auctionDate}`;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+  
+  const removedCount = duplicateCount - uniqueArr.length;
+  if (removedCount > 0) {
+    console.log(`Removed ${removedCount} duplicate entries. Showing ${uniqueArr.length} unique cars.`);
+  }
+  
+  return uniqueArr;
+}
+
 // Filter functions
 function renderFilterPanel() {
   const panel = document.getElementById("filter-panel");
@@ -503,6 +543,8 @@ document.getElementById("file-input").addEventListener("change", function (e) {
     try {
       carData = JSON.parse(evt.target.result);
       if (!Array.isArray(carData)) throw new Error("Not an array");
+      // Remove duplicates from the loaded data
+      carData = removeDuplicates(carData);
       // Populate filter options
       filterOptions.damage = getUnique(carData, "damage");
       filterOptions.status = getUnique(carData, "status");

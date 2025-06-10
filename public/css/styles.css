@@ -11,9 +11,9 @@ body {
     max-width: 1000px;
     margin: 40px auto;
     padding: 24px;
-    background: #232329;
+    background: #27272a;
     border-radius: 16px;
-    box-shadow: 0 2px 16px #0004;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.25);
 }
 
 h1 {
@@ -34,7 +34,7 @@ label {
 input[type="file"] {
     background: #27272a;
     color: #e4e4e7;
-    border: 1px solid #444;
+    border: 1px solid #3f3f46;
     border-radius: 6px;
     padding: 8px;
     font-size: 1rem;
@@ -95,9 +95,9 @@ input[type="file"] {
 
 #filter-panel select,
 #filter-panel input[type="range"] {
-    background: #232329;
+    background: #27272a;
     color: #e4e4e7;
-    border: 1px solid #444;
+    border: 1px solid #3f3f46;
     border-radius: 6px;
     padding: 6px 10px;
     font-size: 1rem;
@@ -142,9 +142,9 @@ input[type="file"] {
 }
 
 #sort-panel select {
-    background: #232329;
+    background: #27272a;
     color: #e4e4e7;
-    border: 1px solid #444;
+    border: 1px solid #3f3f46;
     border-radius: 6px;
     padding: 6px 10px;
     font-size: 1rem;
@@ -165,7 +165,7 @@ input[type="file"] {
 }
 
 #sort-panel button:hover {
-    background: #059669;
+    background: #10b981;
     color: #fff;
 }
 
@@ -181,7 +181,7 @@ input[type="file"] {
     align-items: flex-start;
     gap: 36px;
     padding: 32px 0;
-    border-bottom: 1px solid #232329;
+    border-bottom: 1px solid #3f3f46;
     cursor: pointer;
     min-height: 170px;
     transition: background 0.15s;
@@ -192,7 +192,7 @@ input[type="file"] {
 }
 
 .car-item:hover {
-    background: #232329;
+    background: #27272a;
 }
 
 .car-img {
@@ -200,10 +200,10 @@ input[type="file"] {
     height: 150px;
     object-fit: cover;
     border-radius: 12px;
-    background: #232329;
+    background: #27272a;
     flex-shrink: 0;
-    border: 1px solid #232329;
-    box-shadow: 0 1px 4px #0002;
+    border: 1px solid #3f3f46;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
     margin-right: 12px;
     display: block;
 }
@@ -233,7 +233,7 @@ input[type="file"] {
 .car-vin {
     font-family: monospace;
     font-size: 1em;
-    background: #232329;
+    background: #27272a;
     padding: 2px 8px;
     border-radius: 6px;
     letter-spacing: 1px;
@@ -289,10 +289,10 @@ input[type="file"] {
 /* Minimal scrollbar for dark mode */
 ::-webkit-scrollbar {
     width: 8px;
-    background: #232329;
+    background: #27272a;
 }
 ::-webkit-scrollbar-thumb {
-    background: #27272a;
+    background: #3f3f46;
     border-radius: 8px;
 }
 
@@ -301,7 +301,7 @@ input[type="file"] {
     background: #18181b;
     border-radius: 12px;
     margin-bottom: 2rem;
-    border: 1px solid #232329;
+    border: 1px solid #3f3f46;
 }
 
 .help-header {
@@ -356,8 +356,8 @@ input[type="file"] {
 }
 
 .bookmarklet-code {
-    background: #232329;
-    border: 1px solid #444;
+    background: #27272a;
+    border: 1px solid #3f3f46;
     border-radius: 8px;
     padding: 12px 50px 12px 12px;
     font-family: "Courier New", monospace;
@@ -384,7 +384,7 @@ input[type="file"] {
 }
 
 .copy-button:hover {
-    background: #059669;
+    background: #10b981;
     color: #fff;
 }
 
@@ -448,9 +448,9 @@ input[type="file"] {
 }
 
 .price-toolbar-card {
-    background: #232329;
+    background: #27272a;
     border-radius: 16px 16px 0 0;
-    box-shadow: 0 -2px 16px #0004;
+    box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.25);
     padding: 18px 32px 14px 32px;
     display: flex;
     align-items: center;
@@ -494,7 +494,7 @@ input[type="file"] {
     border-radius: 8px;
     font-size: 1.05em;
     font-weight: 600;
-    box-shadow: 0 2px 8px #0003;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
     pointer-events: none;
     white-space: nowrap;
     transition: opacity 0.2s;
