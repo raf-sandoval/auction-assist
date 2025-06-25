@@ -21,6 +21,17 @@ const defaultBarColor = "#818cf8";
 const selectedBarColor = "#34d399"; // teal
 const hoverBarColor = "#fbbf24";
 
+const NON_RECOMMENDED_DAMAGES = [
+  "Burn",
+  "Burn - Engine",
+  "Burn - Interior",
+  "Mechanical",
+  "Missing/Altered VIN",
+  "Replaced VIN",
+  "Undercarriage",
+  "Water/Flood",
+];
+
 // Utility functions
 function groupByYear(data) {
   const map = {};
@@ -68,26 +79,26 @@ function getPriceRange(arr) {
 function removeDuplicates(arr) {
   const seen = new Set();
   const duplicateCount = arr.length;
-  
+
   const uniqueArr = arr.filter((car) => {
     // Primary deduplication by VIN if available and not empty
-    if (car.vin && car.vin.trim() !== '' && car.vin !== 'N/A') {
+    if (car.vin && car.vin.trim() !== "" && car.vin !== "N/A") {
       if (seen.has(car.vin)) {
         return false;
       }
       seen.add(car.vin);
       return true;
     }
-    
+
     // Secondary deduplication by URL if VIN is not available
-    if (car.url && car.url.trim() !== '') {
+    if (car.url && car.url.trim() !== "") {
       if (seen.has(car.url)) {
         return false;
       }
       seen.add(car.url);
       return true;
     }
-    
+
     // Fallback deduplication by combination of key fields
     const key = `${car.year}-${car.model}-${car.miles}-${car.location}-${car.auctionDate}`;
     if (seen.has(key)) {
@@ -96,12 +107,14 @@ function removeDuplicates(arr) {
     seen.add(key);
     return true;
   });
-  
+
   const removedCount = duplicateCount - uniqueArr.length;
   if (removedCount > 0) {
-    console.log(`Removed ${removedCount} duplicate entries. Showing ${uniqueArr.length} unique cars.`);
+    console.log(
+      `Removed ${removedCount} duplicate entries. Showing ${uniqueArr.length} unique cars.`,
+    );
   }
-  
+
   return uniqueArr;
 }
 
@@ -116,23 +129,36 @@ function renderFilterPanel() {
   title.textContent = "Filters";
   panel.appendChild(title);
 
-  // Two-column content
+  // Two-column content  ░░ Existing filters ░░
   const content = document.createElement("div");
   content.className = "filter-content";
 
-  // Dropdowns stacked vertically
   const dropdowns = document.createElement("div");
   dropdowns.className = "filter-dropdowns";
 
-  // Damage type
+  // ----- Damage dropdown -----
   const damageLabel = document.createElement("label");
   damageLabel.textContent = "Damage";
   const damageSelect = document.createElement("select");
+
+  const damageChoices =
+    currentFilters.special === "clean"
+      ? ["Normal wear", "Minor Dent/Scratches"]
+      : filterOptions.damage.filter((d) => {
+          if (currentFilters.special === "nonRecommended") {
+            // Remove any damage containing "burn" (case-insensitive)
+            if (typeof d === "string" && d.toLowerCase().includes("burn"))
+              return false;
+            // Remove other non-recommended damages
+            if (NON_RECOMMENDED_DAMAGES.includes(d)) return false;
+          }
+          return true;
+        });
+
   damageSelect.innerHTML =
     `<option value="All">All</option>` +
-    filterOptions.damage
-      .map((d) => `<option value="${d}">${d}</option>`)
-      .join("");
+    damageChoices.map((d) => `<option value="${d}">${d}</option>`).join("");
+
   damageSelect.value = currentFilters.damage;
   damageSelect.onchange = (e) => {
     currentFilters.damage = e.target.value;
@@ -141,7 +167,7 @@ function renderFilterPanel() {
   dropdowns.appendChild(damageLabel);
   dropdowns.appendChild(damageSelect);
 
-  // Status
+  // ----- Status dropdown -----
   const statusLabel = document.createElement("label");
   statusLabel.textContent = "Status";
   const statusSelect = document.createElement("select");
@@ -158,107 +184,168 @@ function renderFilterPanel() {
   dropdowns.appendChild(statusLabel);
   dropdowns.appendChild(statusSelect);
 
-  // Sliders stacked vertically
+  // Disable dropdowns when “Clean vehicles” is active
+  const disableDD = currentFilters.special === "clean";
+  damageSelect.disabled = disableDD;
+  statusSelect.disabled = disableDD;
+
+  // ----- Price sliders -----
   const sliders = document.createElement("div");
   sliders.className = "filter-sliders";
 
-  // Price Range - Min
-  const minSliderGroup = document.createElement("div");
-  minSliderGroup.className = "slider-group";
-  const minPriceLabel = document.createElement("label");
-  minPriceLabel.textContent = "Minimum Price";
-  minSliderGroup.appendChild(minPriceLabel);
+  const createSliderGroup = (labelText, isMin) => {
+    const group = document.createElement("div");
+    group.className = "slider-group";
+    const lbl = document.createElement("label");
+    lbl.textContent = labelText;
+    group.appendChild(lbl);
 
-  const minSliderLabels = document.createElement("div");
-  minSliderLabels.className = "slider-labels";
-  minSliderLabels.innerHTML = `<span>$<span id="minPriceLabel">${currentFilters.minPrice}</span></span>`;
-  minSliderGroup.appendChild(minSliderLabels);
+    const lbls = document.createElement("div");
+    lbls.className = "slider-labels";
+    const spanId = isMin ? "minPriceLabel" : "maxPriceLabel";
+    lbls.innerHTML = `<span>$<span id="${spanId}">${
+      isMin ? currentFilters.minPrice : currentFilters.maxPrice
+    }</span></span>`;
+    group.appendChild(lbls);
 
-  const minSlider = document.createElement("input");
-  minSlider.type = "range";
-  minSlider.min = filterOptions.price.min;
-  minSlider.max = filterOptions.price.max;
-  minSlider.step = 100;
-  minSlider.value = currentFilters.minPrice;
-  minSlider.oninput = function () {
-    if (parseInt(minSlider.value) > parseInt(maxSlider.value)) {
-      minSlider.value = maxSlider.value;
-    }
-    currentFilters.minPrice = parseInt(minSlider.value);
-    document.getElementById("minPriceLabel").textContent =
-      currentFilters.minPrice;
+    const slider = document.createElement("input");
+    slider.type = "range";
+    slider.min = filterOptions.price.min;
+    slider.max = filterOptions.price.max;
+    slider.step = 100;
+    slider.value = isMin ? currentFilters.minPrice : currentFilters.maxPrice;
+
+    slider.oninput = () => {
+      if (isMin && +slider.value > currentFilters.maxPrice)
+        slider.value = currentFilters.maxPrice;
+      if (!isMin && +slider.value < currentFilters.minPrice)
+        slider.value = currentFilters.minPrice;
+      if (isMin) currentFilters.minPrice = +slider.value;
+      else currentFilters.maxPrice = +slider.value;
+      document.getElementById(spanId).textContent = slider.value;
+    };
+
+    slider.onchange = slider.oninput;
+
+    group.appendChild(slider);
+    return group;
   };
-  minSlider.onchange = function () {
-    if (parseInt(minSlider.value) > parseInt(maxSlider.value)) {
-      minSlider.value = maxSlider.value;
-    }
-    currentFilters.minPrice = parseInt(minSlider.value);
-    document.getElementById("minPriceLabel").textContent =
-      currentFilters.minPrice;
-    updateFilteredData();
-  };
-  minSliderGroup.appendChild(minSlider);
 
-  // Price Range - Max
-  const maxSliderGroup = document.createElement("div");
-  maxSliderGroup.className = "slider-group";
-  const maxPriceLabel = document.createElement("label");
-  maxPriceLabel.textContent = "Maximum Price";
-  maxSliderGroup.appendChild(maxPriceLabel);
+  sliders.appendChild(createSliderGroup("Minimum Price", true));
+  sliders.appendChild(createSliderGroup("Maximum Price", false));
 
-  const maxSliderLabels = document.createElement("div");
-  maxSliderLabels.className = "slider-labels";
-  maxSliderLabels.innerHTML = `<span>$<span id="maxPriceLabel">${currentFilters.maxPrice}</span></span>`;
-  maxSliderGroup.appendChild(maxSliderLabels);
-
-  const maxSlider = document.createElement("input");
-  maxSlider.type = "range";
-  maxSlider.min = filterOptions.price.min;
-  maxSlider.max = filterOptions.price.max;
-  maxSlider.step = 100;
-  maxSlider.value = currentFilters.maxPrice;
-  maxSlider.oninput = function () {
-    if (parseInt(maxSlider.value) < parseInt(minSlider.value)) {
-      maxSlider.value = minSlider.value;
-    }
-    currentFilters.maxPrice = parseInt(maxSlider.value);
-    document.getElementById("maxPriceLabel").textContent =
-      currentFilters.maxPrice;
-  };
-  maxSlider.onchange = function () {
-    if (parseInt(maxSlider.value) < parseInt(minSlider.value)) {
-      maxSlider.value = minSlider.value;
-    }
-    currentFilters.maxPrice = parseInt(maxSlider.value);
-    document.getElementById("maxPriceLabel").textContent =
-      currentFilters.maxPrice;
-    updateFilteredData();
-  };
-  maxSliderGroup.appendChild(maxSlider);
-
-  sliders.appendChild(minSliderGroup);
-  sliders.appendChild(maxSliderGroup);
-
-  // Add columns to content
   content.appendChild(dropdowns);
   content.appendChild(sliders);
-
   panel.appendChild(content);
+
+  // Full-width separator
+  const separator = document.createElement("div");
+  separator.style.cssText = "width:100%;height:1px;background:#3f3f46;";
+  panel.appendChild(separator);
+
+  // Centered button row
+  const quickRow = document.createElement("div");
+  quickRow.style.cssText =
+    "display:flex;justify-content:center;align-items:center;gap:18px;margin-bottom:8px;width:100%;";
+  // Check if we actually have any non-recommended damages in the data
+  const hasNonRecommended = carData.some((c) =>
+    NON_RECOMMENDED_DAMAGES.includes(c.damage),
+  );
+
+  // ----- Button helper -----
+  const makeBtn = (txt, title, key) => {
+    const btn = document.createElement("button");
+    btn.textContent = txt;
+    btn.title = title;
+    btn.style.cssText =
+      "background:#27272a;color:#e4e4e7;border:1px solid #3f3f46;" +
+      "border-radius:8px;padding:10px 22px;font-size:1.08rem;" +
+      "cursor:pointer;transition:background .15s;font-weight:500;";
+    const isActive = currentFilters.special === key;
+    if (isActive) {
+      btn.style.background = "#34d399";
+      btn.style.color = "#18181b";
+      btn.style.fontWeight = "600";
+    }
+    btn.onmouseenter = () =>
+      (btn.style.background = isActive ? "#10b981" : "#3f3f46");
+    btn.onmouseleave = () =>
+      (btn.style.background = isActive ? "#34d399" : "#27272a");
+    btn.onclick = () => {
+      currentFilters.special = isActive ? null : key; // toggle
+      if (currentFilters.special === "clean") {
+        currentFilters.damage = "All";
+        currentFilters.status = "All";
+      }
+      renderFilterPanel();
+      updateFilteredData();
+    };
+    return btn;
+  };
+
+  if (hasNonRecommended) {
+    quickRow.appendChild(
+      makeBtn(
+        "Remove non-recommended damage",
+        `Removes ${NON_RECOMMENDED_DAMAGES.join(", ")}`,
+        "nonRecommended",
+      ),
+    );
+  }
+
+  quickRow.appendChild(
+    makeBtn(
+      "Clean vehicles only",
+      "Shows only vehicles with minimal damage.",
+      "clean",
+    ),
+  );
+
+  panel.appendChild(quickRow);
   panel.style.display = "";
 }
 
 function applyFilters(data) {
   return data.filter((car) => {
-    // Damage
-    if (currentFilters.damage !== "All" && car.damage !== currentFilters.damage)
-      return false;
-    // Status
-    if (currentFilters.status !== "All" && car.status !== currentFilters.status)
-      return false;
-    // Price
-    let price = typeof car.price === "number" ? car.price : 0;
+    // ---- Special quick-filters first ----
+    if (currentFilters.special === "nonRecommended") {
+      // Remove any damage containing "burn" (case-insensitive)
+      if (
+        typeof car.damage === "string" &&
+        car.damage.toLowerCase().includes("burn")
+      ) {
+        return false;
+      }
+      // Remove other non-recommended damages as before
+      if (NON_RECOMMENDED_DAMAGES.includes(car.damage)) return false;
+    }
+
+    if (currentFilters.special === "clean") {
+      const okDamage =
+        car.damage === "Normal wear" || car.damage === "Minor Dent/Scratches";
+      const okStatus = car.status === "Run and Drive";
+      if (!(okDamage && okStatus)) return false;
+    }
+
+    // ---- Regular dropdown filters (ignored when 'clean' is active) ----
+    if (currentFilters.special !== "clean") {
+      if (
+        currentFilters.damage !== "All" &&
+        car.damage !== currentFilters.damage
+      )
+        return false;
+      if (
+        currentFilters.status !== "All" &&
+        car.status !== currentFilters.status
+      )
+        return false;
+    }
+
+    // ---- Price sliders ----
+    const price = typeof car.price === "number" ? car.price : 0;
     if (price < currentFilters.minPrice || price > currentFilters.maxPrice)
       return false;
+
     return true;
   });
 }
