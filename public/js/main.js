@@ -215,6 +215,7 @@ function renderFilterPanel() {
     slider.step = 100;
     slider.value = isMin ? currentFilters.minPrice : currentFilters.maxPrice;
 
+    /* While dragging: only update the value display */
     slider.oninput = () => {
       if (isMin && +slider.value > currentFilters.maxPrice)
         slider.value = currentFilters.maxPrice;
@@ -225,7 +226,11 @@ function renderFilterPanel() {
       document.getElementById(spanId).textContent = slider.value;
     };
 
-    slider.onchange = slider.oninput;
+    /* When user releases the thumb: update value + refresh data */
+    slider.onchange = () => {
+      slider.oninput(); // keep labels/values in sync
+      updateFilteredData(); // refresh chart & list
+    };
 
     group.appendChild(slider);
     return group;
