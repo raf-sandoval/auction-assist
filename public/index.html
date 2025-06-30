@@ -5,8 +5,10 @@
         <link rel="icon" href="/assets/favicon.png" />
         <title>Car Auction Yearly Price Chart</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <!-- Chart.js CDN -->
+        <!-- Chart.js -->
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot"></script>
         <link rel="stylesheet" href="/css/styles.css" />
     </head>
     <body>
@@ -62,10 +64,135 @@
             <div id="chart-container" style="display: none">
                 <canvas id="barChart" height="120"></canvas>
             </div>
+            <div
+                id="graphs-section"
+                class="graphs-section"
+                style="display: none"
+            >
+                <div class="graphs-header" onclick="toggleGraphsSection()">
+                    <span style="font-size: 1.3em; margin-right: 0.5em"
+                        >📊</span
+                    >
+                    <span style="font-weight: 600">Graphs</span>
+                    <span
+                        id="graphs-toggle"
+                        style="
+                            margin-left: auto;
+                            font-size: 1.2em;
+                            color: #a1a1aa;
+                            transition: transform 0.2s;
+                        "
+                        >▼</span
+                    >
+                </div>
+                <div
+                    id="graphs-content"
+                    class="graphs-content"
+                    style="display: none"
+                >
+                    <div class="graphs-tabs">
+                        <button
+                            class="graphs-tab graphs-tab-active"
+                            data-tab="scatter"
+                            onclick="selectGraphsTab('scatter')"
+                        >
+                            Price vs Date
+                        </button>
+                        <button
+                            class="graphs-tab"
+                            data-tab="tab2"
+                            onclick="selectGraphsTab('tab2')"
+                        >
+                            Price Histogram
+                        </button>
+                        <button
+                            class="graphs-tab"
+                            data-tab="tab3"
+                            onclick="selectGraphsTab('tab3')"
+                        >
+                            Prices by Damage
+                        </button>
+                        <button
+                            class="graphs-tab"
+                            data-tab="tab4"
+                            onclick="selectGraphsTab('tab4')"
+                        >
+                            Avg Price Over Time
+                        </button>
+                    </div>
+                    <div
+                        class="graphs-tab-content"
+                        id="graphs-tab-scatter"
+                        style="display: block"
+                    >
+                        <canvas id="scatterChart" height="180"></canvas>
+                        <div
+                            id="scatter-legend-colors"
+                            class="scatter-legend"
+                        ></div>
+                        <div
+                            id="scatter-legend-shapes"
+                            class="scatter-legend"
+                        ></div>
+                    </div>
+                    <div
+                        class="graphs-tab-content"
+                        id="graphs-tab-tab2"
+                        style="display: none"
+                    >
+                        <canvas id="priceHistogram" height="180"></canvas>
+                    </div>
+                    <div
+                        class="graphs-tab-content"
+                        id="graphs-tab-tab3"
+                        style="display: none"
+                    >
+                        <canvas id="boxPlotChart" height="200"></canvas>
+                    </div>
+                    <div
+                        class="graphs-tab-content"
+                        id="graphs-tab-tab4"
+                        style="display: none"
+                    >
+                        <div
+                            style="
+                                margin-bottom: 16px;
+                                display: flex;
+                                align-items: center;
+                                gap: 12px;
+                            "
+                        >
+                            <label
+                                for="metric-selector"
+                                style="
+                                    color: #a1a1aa;
+                                    font-size: 1rem;
+                                    margin-bottom: 0;
+                                "
+                                >Show:</label
+                            >
+                            <select
+                                id="metric-selector"
+                                style="
+                                    background: #27272a;
+                                    color: #e4e4e7;
+                                    border: 1px solid #3f3f46;
+                                    border-radius: 6px;
+                                    padding: 6px 10px;
+                                    font-size: 1rem;
+                                "
+                            >
+                                <option value="price">Average Price</option>
+                                <option value="mileage">Average Mileage</option>
+                            </select>
+                        </div>
+                        <canvas id="avgPriceLineChart" height="180"></canvas>
+                    </div>
+                </div>
+            </div>
             <div id="sort-panel" style="display: none"></div>
             <div id="car-list"></div>
         </div>
-        <script src="/js/main.js"></script>
         <div id="price-toolbar" class="price-toolbar" style="display: none">
             <div class="price-toolbar-card">
                 <span id="price-toolbar-min" class="price-toolbar-value"></span>
@@ -89,5 +216,7 @@
                 <span id="price-toolbar-max" class="price-toolbar-value"></span>
             </div>
         </div>
+        <script src="/js/main.js"></script>
+        <script src="/js/graphs.js"></script>
     </body>
 </html>
