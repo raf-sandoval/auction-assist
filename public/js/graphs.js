@@ -593,31 +593,45 @@ function getQuartile(sortedArray, quartile) {
   }
 }
 
-// ====== Average Price Over Time (Tab 4) ======
-let avgPriceLineChart = null;
-
-// ===== Linear regression for trend line =====
-function getLinearRegression(xVals, yVals) {
-  const n = xVals.length;
-  if (n < 2) return { m: 0, b: 0 };
-  const sumX = xVals.reduce((a, b) => a + b, 0);
-  const sumY = yVals.reduce((a, b) => a + b, 0);
-  const sumXY = xVals.reduce((sum, x, i) => sum + x * yVals[i], 0);
-  const sumXX = xVals.reduce((sum, x) => sum + x * x, 0);
-  const m = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-  const b = (sumY - m * sumX) / n;
-  return { m, b };
-}
+// ====== Average Price/Mileage Over Time (Tab 4) ======
+let avgLineChart = null;
+let currentMetric = "price";
 
 window.renderAvgPriceLineChart = function (carList) {
-  // Only show if there is at least one car with price > 0 and auctionDate
-  const validCars = carList.filter(
-    (c) => typeof c.price === "number" && c.price > 0 && c.auctionDate,
-  );
+  // Get selected metric
+  const selector = document.getElementById("metric-selector");
+  if (selector) {
+    currentMetric = selector.value;
+    // Add event listener if not already added
+    if (!selector.hasAttribute("data-listener")) {
+      selector.addEventListener("change", () => {
+        window.renderAvgPriceLineChart(carList);
+      });
+      selector.setAttribute("data-listener", "true");
+    }
+  }
+
+  // Only show if there is at least one car with the required data and auctionDate
+  const validCars = carList.filter((car) => {
+    const hasDate = car.auctionDate;
+    const hasPrice = typeof car.price === "number" && car.price > 0;
+    const hasMiles =
+      typeof car.miles === "number" &&
+      car.miles > 0 &&
+      car.miles !== 999999 &&
+      car.miles !== 999_999;
+
+    if (currentMetric === "price") {
+      return hasDate && hasPrice;
+    } else {
+      return hasDate && hasMiles;
+    }
+  });
+
   if (!validCars.length) {
-    if (avgPriceLineChart) {
-      avgPriceLineChart.destroy();
-      avgPriceLineChart = null;
+    if (avgLineChart) {
+      avgLineChart.destroy();
+      avgLineChart = null;
     }
     document.getElementById("avgPriceLineChart").style.display = "none";
     return;
@@ -630,53 +644,90 @@ window.renderAvgPriceLineChart = function (carList) {
     const date = parseAuctionDateISO(car.auctionDate);
     if (!date) return;
     if (!dateMap[date]) dateMap[date] = [];
-    dateMap[date].push(car.price);
+
+    const value = currentMetric === "price" ? car.price : car.miles;
+    dateMap[date].push(value);
   });
 
   // Sort dates
   const dates = Object.keys(dateMap).sort();
 
-  // Calculate average price per date
-  const avgPrices = dates.map((date) => {
-    const prices = dateMap[date];
-    return prices.reduce((sum, p) => sum + p, 0) / prices.length;
+  // Calculate average value per date
+  const avgValues = dates.map((date) => {
+    const values = dateMap[date];
+    return values.reduce((sum, v) => sum + v, 0) / values.length;
   });
 
+  // Calculate trend line using linear regression
+  const trendData = calculateTrendLine(dates, avgValues);
+
+  // Chart configuration based on metric
+  const isPrice = currentMetric === "price";
+  const config = {
+    label: isPrice ? "Average Price" : "Average Mileage",
+    yAxisTitle: isPrice ? "Average Price (USD)" : "Average Mileage (miles)",
+    color: isPrice ? "#34d399" : "#818cf8",
+    trendColor: isPrice ? "#fbbf24" : "#f472b6",
+    formatter: isPrice
+      ? (v) => `$${Math.round(v).toLocaleString()}`
+      : (v) => `${Math.round(v).toLocaleString()} mi`,
+  };
+
   // Destroy previous chart if exists
-  if (avgPriceLineChart) {
-    avgPriceLineChart.destroy();
-    avgPriceLineChart = null;
+  if (avgLineChart) {
+    avgLineChart.destroy();
+    avgLineChart = null;
   }
 
   // Create chart
   const ctx = document.getElementById("avgPriceLineChart").getContext("2d");
-  avgPriceLineChart = new Chart(ctx, {
+  avgLineChart = new Chart(ctx, {
     type: "line",
     data: {
       labels: dates,
       datasets: [
         {
-          label: "Average Price",
-          data: avgPrices,
+          label: config.label,
+          data: avgValues,
           fill: false,
-          borderColor: "#34d399",
-          backgroundColor: "#34d399",
+          borderColor: config.color,
+          backgroundColor: config.color,
           tension: 0.2,
           pointRadius: 4,
           pointHoverRadius: 7,
+          order: 1,
+        },
+        {
+          label: "Trend Line",
+          data: trendData,
+          fill: false,
+          borderColor: config.trendColor,
+          backgroundColor: config.trendColor,
+          borderDash: [5, 5],
+          tension: 0,
+          pointRadius: 0,
+          pointHoverRadius: 0,
+          order: 2,
         },
       ],
     },
     options: {
       responsive: true,
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: true,
+          position: "top",
+          labels: {
+            color: "#e4e4e7",
+            font: { size: 14 },
+            usePointStyle: true,
+            pointStyle: "line",
+          },
+        },
         tooltip: {
           callbacks: {
             title: (ctx) => {
-              // ctx[0].parsed.x is a timestamp, ctx[0].label is an ISO string
               let dateStr = ctx[0].label || "";
-              // Try to parse as ISO date
               const d = new Date(dateStr);
               if (!isNaN(d)) {
                 const day = d.getDate();
@@ -688,8 +739,9 @@ window.renderAvgPriceLineChart = function (carList) {
             },
             label: (ctx) => {
               const val = ctx.parsed.y;
+              const label = ctx.dataset.label;
               return typeof val === "number"
-                ? `$${Math.round(val).toLocaleString()}`
+                ? `${label}: ${config.formatter(val)}`
                 : "";
             },
           },
@@ -718,17 +770,43 @@ window.renderAvgPriceLineChart = function (carList) {
         y: {
           title: {
             display: true,
-            text: "Average Price (USD)",
+            text: config.yAxisTitle,
             color: "#e4e4e7",
             font: { weight: 600 },
           },
           grid: { color: "#232329" },
           ticks: {
             color: "#a1a1aa",
-            callback: (v) => "$" + v.toLocaleString(),
+            callback: config.formatter,
           },
         },
       },
     },
   });
 };
+
+// Helper function to calculate linear regression trend line (unchanged)
+function calculateTrendLine(dates, values) {
+  if (dates.length < 2) return [];
+
+  // Convert dates to numeric values (days since first date)
+  const firstDate = new Date(dates[0]);
+  const x = dates.map((date) => {
+    const d = new Date(date);
+    return Math.floor((d - firstDate) / (1000 * 60 * 60 * 24)); // days difference
+  });
+  const y = values;
+
+  // Calculate linear regression: y = mx + b
+  const n = x.length;
+  const sumX = x.reduce((a, b) => a + b, 0);
+  const sumY = y.reduce((a, b) => a + b, 0);
+  const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+  const sumXX = x.reduce((sum, xi) => sum + xi * xi, 0);
+
+  const m = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+  const b = (sumY - m * sumX) / n;
+
+  // Generate trend line points
+  return x.map((xi) => m * xi + b);
+}
