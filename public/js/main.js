@@ -379,6 +379,9 @@ function updateFilteredData() {
   if (window.renderPriceBoxPlot) {
     window.renderPriceBoxPlot(filtered);
   }
+  if (window.renderAvgPriceLineChart) {
+    window.renderAvgPriceLineChart(filtered);
+  }
 }
 
 // Chart functions

@@ -592,3 +592,143 @@ function getQuartile(sortedArray, quartile) {
     return sortedArray[base];
   }
 }
+
+// ====== Average Price Over Time (Tab 4) ======
+let avgPriceLineChart = null;
+
+// ===== Linear regression for trend line =====
+function getLinearRegression(xVals, yVals) {
+  const n = xVals.length;
+  if (n < 2) return { m: 0, b: 0 };
+  const sumX = xVals.reduce((a, b) => a + b, 0);
+  const sumY = yVals.reduce((a, b) => a + b, 0);
+  const sumXY = xVals.reduce((sum, x, i) => sum + x * yVals[i], 0);
+  const sumXX = xVals.reduce((sum, x) => sum + x * x, 0);
+  const m = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+  const b = (sumY - m * sumX) / n;
+  return { m, b };
+}
+
+window.renderAvgPriceLineChart = function (carList) {
+  // Only show if there is at least one car with price > 0 and auctionDate
+  const validCars = carList.filter(
+    (c) => typeof c.price === "number" && c.price > 0 && c.auctionDate,
+  );
+  if (!validCars.length) {
+    if (avgPriceLineChart) {
+      avgPriceLineChart.destroy();
+      avgPriceLineChart = null;
+    }
+    document.getElementById("avgPriceLineChart").style.display = "none";
+    return;
+  }
+  document.getElementById("avgPriceLineChart").style.display = "";
+
+  // Group by auction date (YYYY-MM-DD)
+  const dateMap = {};
+  validCars.forEach((car) => {
+    const date = parseAuctionDateISO(car.auctionDate);
+    if (!date) return;
+    if (!dateMap[date]) dateMap[date] = [];
+    dateMap[date].push(car.price);
+  });
+
+  // Sort dates
+  const dates = Object.keys(dateMap).sort();
+
+  // Calculate average price per date
+  const avgPrices = dates.map((date) => {
+    const prices = dateMap[date];
+    return prices.reduce((sum, p) => sum + p, 0) / prices.length;
+  });
+
+  // Destroy previous chart if exists
+  if (avgPriceLineChart) {
+    avgPriceLineChart.destroy();
+    avgPriceLineChart = null;
+  }
+
+  // Create chart
+  const ctx = document.getElementById("avgPriceLineChart").getContext("2d");
+  avgPriceLineChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: dates,
+      datasets: [
+        {
+          label: "Average Price",
+          data: avgPrices,
+          fill: false,
+          borderColor: "#34d399",
+          backgroundColor: "#34d399",
+          tension: 0.2,
+          pointRadius: 4,
+          pointHoverRadius: 7,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (ctx) => {
+              // ctx[0].parsed.x is a timestamp, ctx[0].label is an ISO string
+              let dateStr = ctx[0].label || "";
+              // Try to parse as ISO date
+              const d = new Date(dateStr);
+              if (!isNaN(d)) {
+                const day = d.getDate();
+                const month = d.toLocaleString("default", { month: "short" });
+                const year = d.getFullYear();
+                return `${day} ${month} ${year}`;
+              }
+              return dateStr;
+            },
+            label: (ctx) => {
+              const val = ctx.parsed.y;
+              return typeof val === "number"
+                ? `$${Math.round(val).toLocaleString()}`
+                : "";
+            },
+          },
+        },
+      },
+      scales: {
+        x: {
+          type: "time",
+          time: {
+            unit: "month",
+            tooltipFormat: "dd MMM yyyy",
+            displayFormats: {
+              month: "MMM yyyy",
+              day: "dd MMM",
+            },
+          },
+          title: {
+            display: true,
+            text: "Auction Date",
+            color: "#e4e4e7",
+            font: { weight: 600 },
+          },
+          grid: { color: "#232329" },
+          ticks: { color: "#a1a1aa" },
+        },
+        y: {
+          title: {
+            display: true,
+            text: "Average Price (USD)",
+            color: "#e4e4e7",
+            font: { weight: 600 },
+          },
+          grid: { color: "#232329" },
+          ticks: {
+            color: "#a1a1aa",
+            callback: (v) => "$" + v.toLocaleString(),
+          },
+        },
+      },
+    },
+  });
+};
