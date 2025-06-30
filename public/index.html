@@ -7,6 +7,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <!-- Chart.js CDN -->
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
         <link rel="stylesheet" href="/css/styles.css" />
     </head>
     <body>
@@ -62,10 +63,103 @@
             <div id="chart-container" style="display: none">
                 <canvas id="barChart" height="120"></canvas>
             </div>
+            <div
+                id="graphs-section"
+                class="graphs-section"
+                style="display: none"
+            >
+                <div class="graphs-header" onclick="toggleGraphsSection()">
+                    <span style="font-size: 1.3em; margin-right: 0.5em"
+                        >📊</span
+                    >
+                    <span style="font-weight: 600">Graphs</span>
+                    <span
+                        id="graphs-toggle"
+                        style="
+                            margin-left: auto;
+                            font-size: 1.2em;
+                            color: #a1a1aa;
+                            transition: transform 0.2s;
+                        "
+                        >▼</span
+                    >
+                </div>
+                <div
+                    id="graphs-content"
+                    class="graphs-content"
+                    style="display: none"
+                >
+                    <div class="graphs-tabs">
+                        <button
+                            class="graphs-tab graphs-tab-active"
+                            data-tab="scatter"
+                            onclick="selectGraphsTab('scatter')"
+                        >
+                            Price vs Date
+                        </button>
+                        <button
+                            class="graphs-tab"
+                            data-tab="tab2"
+                            onclick="selectGraphsTab('tab2')"
+                        >
+                            TBD 2
+                        </button>
+                        <button
+                            class="graphs-tab"
+                            data-tab="tab3"
+                            onclick="selectGraphsTab('tab3')"
+                        >
+                            TBD 3
+                        </button>
+                        <button
+                            class="graphs-tab"
+                            data-tab="tab4"
+                            onclick="selectGraphsTab('tab4')"
+                        >
+                            TBD 4
+                        </button>
+                    </div>
+                    <div
+                        class="graphs-tab-content"
+                        id="graphs-tab-scatter"
+                        style="display: block"
+                    >
+                        <canvas id="scatterChart" height="180"></canvas>
+                        <div
+                            id="scatter-legend-colors"
+                            class="scatter-legend"
+                        ></div>
+                        <div
+                            id="scatter-legend-shapes"
+                            class="scatter-legend"
+                        ></div>
+                    </div>
+                    <div
+                        class="graphs-tab-content"
+                        id="graphs-tab-tab2"
+                        style="display: none"
+                    >
+                        <!-- Future graph 2 -->
+                    </div>
+                    <div
+                        class="graphs-tab-content"
+                        id="graphs-tab-tab3"
+                        style="display: none"
+                    >
+                        <!-- Future graph 3 -->
+                    </div>
+                    <div
+                        class="graphs-tab-content"
+                        id="graphs-tab-tab4"
+                        style="display: none"
+                    >
+                        <!-- Future graph 4 -->
+                    </div>
+                </div>
+            </div>
             <div id="sort-panel" style="display: none"></div>
             <div id="car-list"></div>
         </div>
-        <script src="/js/main.js"></script>
         <div id="price-toolbar" class="price-toolbar" style="display: none">
             <div class="price-toolbar-card">
                 <span id="price-toolbar-min" class="price-toolbar-value"></span>
@@ -89,5 +183,7 @@
                 <span id="price-toolbar-max" class="price-toolbar-value"></span>
             </div>
         </div>
+        <script src="/js/main.js"></script>
+        <script src="/js/graphs.js"></script>
     </body>
 </html>

@@ -370,6 +370,9 @@ function updateFilteredData() {
     // Show all years by default
     showCarList(null, filtered);
   }
+  if (window.renderScatterChart) {
+    window.renderScatterChart(applyFilters(carData));
+  }
 }
 
 // Chart functions
@@ -645,6 +648,7 @@ document.getElementById("file-input").addEventListener("change", function (e) {
       currentFilters.maxPrice = filterOptions.price.max;
       // Show filter panel
       renderFilterPanel();
+      document.getElementById("graphs-section").style.display = "none";
       // Initial filter and chart
       updateFilteredData();
     } catch (err) {
