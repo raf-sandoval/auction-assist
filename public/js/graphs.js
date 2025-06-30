@@ -270,3 +270,98 @@ style.innerHTML = `
 }
 `;
 document.head.appendChild(style);
+
+// ====== Price Histogram (Tab 2) ======
+let priceHistogramChart = null;
+
+window.renderPriceHistogram = function (carList) {
+  // Only show if there is at least one car with price > 0
+  const prices = carList
+    .map((c) => (typeof c.price === "number" ? c.price : null))
+    .filter((p) => p && p > 0);
+  if (!prices.length) {
+    if (priceHistogramChart) {
+      priceHistogramChart.destroy();
+      priceHistogramChart = null;
+    }
+    document.getElementById("priceHistogram").style.display = "none";
+    return;
+  }
+  document.getElementById("priceHistogram").style.display = "";
+
+  // Calculate bins (let's use 12 bins for a good balance)
+  const binCount = 12;
+  const min = Math.min(...prices);
+  const max = Math.max(...prices);
+  const binSize = Math.ceil((max - min) / binCount) || 1;
+  const bins = Array(binCount).fill(0);
+  prices.forEach((price) => {
+    let idx = Math.floor((price - min) / binSize);
+    if (idx >= binCount) idx = binCount - 1;
+    bins[idx]++;
+  });
+
+  // Bin labels
+  const binLabels = [];
+  for (let i = 0; i < binCount; i++) {
+    const from = min + i * binSize;
+    const to = from + binSize - 1;
+    binLabels.push(`$${from.toLocaleString()}–$${to.toLocaleString()}`);
+  }
+
+  // Destroy previous chart if exists
+  if (priceHistogramChart) {
+    priceHistogramChart.destroy();
+    priceHistogramChart = null;
+  }
+
+  // Create chart
+  const ctx = document.getElementById("priceHistogram").getContext("2d");
+  priceHistogramChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: binLabels,
+      datasets: [
+        {
+          label: "Number of Cars",
+          data: bins,
+          backgroundColor: "#818cf8",
+          borderRadius: 8,
+          borderWidth: 0,
+          hoverBackgroundColor: "#34d399",
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.parsed.y} cars`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: "#232329" },
+          ticks: {
+            color: "#e4e4e7",
+            font: { weight: 600 },
+            autoSkip: false,
+            maxRotation: 40,
+            minRotation: 20,
+          },
+        },
+        y: {
+          grid: { color: "#232329" },
+          ticks: {
+            color: "#a1a1aa",
+            precision: 0,
+            beginAtZero: true,
+          },
+        },
+      },
+    },
+  });
+};
