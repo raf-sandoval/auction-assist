@@ -365,3 +365,230 @@ window.renderPriceHistogram = function (carList) {
     },
   });
 };
+
+// ====== Price Box Plot by Damage Type (Tab 3) ======
+let boxPlotChart = null;
+
+window.renderPriceBoxPlot = function (carList) {
+  console.log("Rendering box plot with", carList.length, "cars");
+
+  // Only show if there is at least one car with price > 0
+  const validCars = carList.filter(
+    (c) => typeof c.price === "number" && c.price > 0 && c.damage,
+  );
+
+  console.log("Valid cars for box plot:", validCars.length);
+
+  if (!validCars.length) {
+    if (boxPlotChart) {
+      boxPlotChart.destroy();
+      boxPlotChart = null;
+    }
+    document.getElementById("boxPlotChart").style.display = "none";
+    return;
+  }
+  document.getElementById("boxPlotChart").style.display = "";
+
+  // Group cars by damage type
+  const damageGroups = {};
+  validCars.forEach((car) => {
+    const damage = car.damage || "Unknown";
+    if (!damageGroups[damage]) damageGroups[damage] = [];
+    damageGroups[damage].push(car.price);
+  });
+
+  console.log("Damage groups:", damageGroups);
+
+  // Filter out damage types with fewer than 2 cars (lowered threshold)
+  const filteredGroups = Object.fromEntries(
+    Object.entries(damageGroups).filter(([_, prices]) => prices.length >= 2),
+  );
+
+  console.log("Filtered groups:", filteredGroups);
+
+  if (!Object.keys(filteredGroups).length) {
+    if (boxPlotChart) {
+      boxPlotChart.destroy();
+      boxPlotChart = null;
+    }
+    const canvas = document.getElementById("boxPlotChart");
+    const container = canvas.parentElement;
+    container.innerHTML =
+      '<p style="text-align:center;color:#a1a1aa;padding:40px;">Not enough data for box plots (need at least 2 cars per damage type)</p>';
+    return;
+  }
+
+  // Check if box plot is available
+  if (!Chart.registry.getController("boxplot")) {
+    console.error("Box plot controller not found. Falling back to bar chart.");
+    renderDamageBarChart(filteredGroups);
+    return;
+  }
+
+  // Prepare data for Chart.js box plot - CORRECTED FORMAT
+  const labels = Object.keys(filteredGroups).sort();
+  const datasets = [
+    {
+      label: "Price Distribution",
+      data: labels.map((damage) => filteredGroups[damage]), // Direct array of prices
+      backgroundColor: labels.map((damage) => getDamageColor(damage) + "80"), // 50% opacity
+      borderColor: labels.map((damage) => getDamageColor(damage)),
+      borderWidth: 2,
+    },
+  ];
+
+  console.log("Chart data:", { labels, datasets });
+
+  // Destroy previous chart if exists
+  if (boxPlotChart) {
+    boxPlotChart.destroy();
+    boxPlotChart = null;
+  }
+
+  // Create chart
+  const ctx = document.getElementById("boxPlotChart").getContext("2d");
+
+  try {
+    boxPlotChart = new Chart(ctx, {
+      type: "boxplot",
+      data: {
+        labels: labels,
+        datasets: datasets,
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) {
+                const damage = ctx.label;
+                const prices = filteredGroups[damage];
+                const sorted = [...prices].sort((a, b) => a - b);
+                const min = Math.min(...prices);
+                const max = Math.max(...prices);
+                const median = getMedian(sorted);
+
+                return [
+                  `Damage: ${damage}`,
+                  `Count: ${prices.length} cars`,
+                  `Min: $${min.toLocaleString()}`,
+                  `Median: $${Math.round(median).toLocaleString()}`,
+                  `Max: $${max.toLocaleString()}`,
+                ];
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            grid: { color: "#232329" },
+            ticks: {
+              color: "#e4e4e7",
+              font: { weight: 600 },
+              maxRotation: 45,
+              minRotation: 0,
+            },
+          },
+          y: {
+            title: {
+              display: true,
+              text: "Price (USD)",
+              color: "#e4e4e7",
+              font: { weight: 600 },
+            },
+            grid: { color: "#232329" },
+            ticks: {
+              color: "#a1a1aa",
+              callback: (v) => "$" + v.toLocaleString(),
+            },
+          },
+        },
+      },
+    });
+    console.log("Box plot chart created successfully");
+  } catch (error) {
+    console.error("Error creating box plot:", error);
+    renderDamageBarChart(filteredGroups);
+  }
+};
+
+// Fallback: render as bar chart showing average prices
+function renderDamageBarChart(filteredGroups) {
+  console.log("Rendering fallback bar chart");
+  const labels = Object.keys(filteredGroups).sort();
+  const averages = labels.map((damage) => {
+    const prices = filteredGroups[damage];
+    return prices.reduce((sum, p) => sum + p, 0) / prices.length;
+  });
+
+  if (boxPlotChart) {
+    boxPlotChart.destroy();
+    boxPlotChart = null;
+  }
+
+  const ctx = document.getElementById("boxPlotChart").getContext("2d");
+  boxPlotChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: "Average Price by Damage",
+          data: averages,
+          backgroundColor: labels.map((damage) => getDamageColor(damage)),
+          borderRadius: 8,
+          borderWidth: 0,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => [
+              `Average: $${Math.round(ctx.parsed.y).toLocaleString()}`,
+              `Count: ${filteredGroups[ctx.label].length} cars`,
+            ],
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: "#232329" },
+          ticks: { color: "#e4e4e7", font: { weight: 600 }, maxRotation: 45 },
+        },
+        y: {
+          grid: { color: "#232329" },
+          ticks: {
+            color: "#a1a1aa",
+            callback: (v) => "$" + v.toLocaleString(),
+          },
+        },
+      },
+    },
+  });
+}
+
+// Helper functions for quartile calculations (keep these)
+function getMedian(sortedArray) {
+  const mid = Math.floor(sortedArray.length / 2);
+  return sortedArray.length % 2 !== 0
+    ? sortedArray[mid]
+    : (sortedArray[mid - 1] + sortedArray[mid]) / 2;
+}
+
+function getQuartile(sortedArray, quartile) {
+  const pos = (sortedArray.length - 1) * quartile;
+  const base = Math.floor(pos);
+  const rest = pos - base;
+  if (sortedArray[base + 1] !== undefined) {
+    return (
+      sortedArray[base] + rest * (sortedArray[base + 1] - sortedArray[base])
+    );
+  } else {
+    return sortedArray[base];
+  }
+}

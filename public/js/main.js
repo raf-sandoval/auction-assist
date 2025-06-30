@@ -376,6 +376,9 @@ function updateFilteredData() {
   if (window.renderPriceHistogram) {
     window.renderPriceHistogram(applyFilters(carData));
   }
+  if (window.renderPriceBoxPlot) {
+    window.renderPriceBoxPlot(filtered);
+  }
 }
 
 // Chart functions

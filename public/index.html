@@ -5,9 +5,10 @@
         <link rel="icon" href="/assets/favicon.png" />
         <title>Car Auction Yearly Price Chart</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <!-- Chart.js CDN -->
+        <!-- Chart.js -->
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot"></script>
         <link rel="stylesheet" href="/css/styles.css" />
     </head>
     <body>
@@ -109,7 +110,7 @@
                             data-tab="tab3"
                             onclick="selectGraphsTab('tab3')"
                         >
-                            TBD 3
+                            Prices by Damage
                         </button>
                         <button
                             class="graphs-tab"
@@ -146,7 +147,7 @@
                         id="graphs-tab-tab3"
                         style="display: none"
                     >
-                        <!-- Future graph 3 -->
+                        <canvas id="boxPlotChart" height="200"></canvas>
                     </div>
                     <div
                         class="graphs-tab-content"
