@@ -1,27 +1,47 @@
+html {
+    background-color: #0b0b10;
+    height: 100%;
+    overscroll-behavior: none;
+}
+
 body {
-    background: #18181b;
     color: #e4e4e7;
-    font-family: "Inter", system-ui, sans-serif;
+    font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
     margin: 0;
     padding: 0;
     min-height: 100vh;
+    min-height: 100dvh;
+    position: relative;
+    overscroll-behavior: none;
+}
+
+/* Fixed gradient background to avoid flicker/white during overscroll */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(1200px 800px at 10% -10%, #1f2937 0%, #0f172a 40%, #0b0b10 100%);
+    background-attachment: fixed;
 }
 
 .container {
     max-width: 1000px;
     margin: 40px auto;
     padding: 24px;
-    background: #27272a;
+    background: linear-gradient(180deg, rgba(39,39,42,0.85), rgba(24,24,27,0.85));
     border-radius: 16px;
-    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    border: 1px solid #2f2f35;
+    backdrop-filter: blur(6px);
 }
 
 h1 {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 1.5rem;
+    font-size: 2.1rem;
+    font-weight: 800;
+    margin-bottom: 1.2rem;
     color: #fafafa;
-    letter-spacing: -1px;
+    letter-spacing: -0.02em;
 }
 
 label {
@@ -47,9 +67,10 @@ input[type="file"] {
     gap: 18px;
     align-items: flex-start;
     margin-bottom: 2rem;
-    background: #18181b;
+    background: linear-gradient(180deg, rgba(24,24,27,0.85), rgba(17,17,20,0.85));
     border-radius: 12px;
     padding: 18px 16px 8px 16px;
+    border: 1px solid #2b2b30;
 }
 
 #filter-panel-title {
@@ -74,7 +95,7 @@ input[type="file"] {
     gap: 12px;
     width: 100%;
     min-width: 180px;
-    max-width: 300px;
+    max-width: 420px;
 }
 
 .filter-sliders {
@@ -104,6 +125,61 @@ input[type="file"] {
     margin-bottom: 0.5rem;
     width: 100%;
 }
+/* Unify range slider accent color */
+#filter-panel input[type="range"] {
+    accent-color: #34d399;
+    height: 4px;
+}
+
+/* Checkbox list styling */
+.checkbox-group {
+    position: relative;
+    border: 1px solid #2b2b30;
+    border-radius: 10px;
+    padding: 18px 12px 10px 12px;
+    margin-bottom: 12px;
+    background: transparent;
+}
+.checkbox-group > label {
+    position: absolute;
+    top: -10px;
+    left: 12px;
+    padding: 0 6px;
+    background: #18181b;
+    color: #e4e4e7;
+    font-weight: 600;
+    font-size: 0.98rem;
+    margin: 0 !important;
+}
+.checkbox-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.checkbox-list-damage {
+    max-height: 240px;
+    overflow: auto;
+    padding-right: 4px;
+}
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0;
+}
+.checkbox-item input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #34d399;
+}
+.checkbox-item label {
+    margin: 0 !important;
+    color: #e4e4e7 !important;
+}
+.checkbox-list.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
 
 .slider-group {
     display: flex;
@@ -124,6 +200,7 @@ input[type="file"] {
     border-radius: 12px;
     padding: 24px 16px 8px 16px;
     margin-bottom: 2rem;
+    border: 1px solid #2b2b30;
 }
 
 #sort-panel {
@@ -174,6 +251,7 @@ input[type="file"] {
     border-radius: 12px;
     padding: 16px;
     min-height: 60px;
+    border: 1px solid #2b2b30;
 }
 
 .car-item {
@@ -192,7 +270,7 @@ input[type="file"] {
 }
 
 .car-item:hover {
-    background: #27272a;
+    background: #232329;
 }
 
 .car-img {
@@ -301,7 +379,7 @@ input[type="file"] {
     background: #18181b;
     border-radius: 12px;
     margin-bottom: 2rem;
-    border: 1px solid #3f3f46;
+    border: 1px solid #2b2b30;
 }
 
 .help-header {
@@ -578,6 +656,15 @@ input[type="file"] {
 
 .graphs-tab-content[style*="display:block"] {
     display: block;
+}
+.histogram-controls {
+    margin-bottom: 10px;
+    color: #a1a1aa;
+    user-select: none;
+}
+.histogram-controls input[type="checkbox"] {
+    accent-color: #34d399;
+    margin-right: 6px;
 }
 .scatter-legend {
     display: flex;

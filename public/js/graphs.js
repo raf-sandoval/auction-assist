@@ -276,9 +276,16 @@ let priceHistogramChart = null;
 
 window.renderPriceHistogram = function (carList) {
   // Only show if there is at least one car with price > 0
-  const prices = carList
+  let prices = carList
     .map((c) => (typeof c.price === "number" ? c.price : null))
     .filter((p) => p && p > 0);
+
+  // Optional: exclude outliers over 99th percentile if toggle is checked
+  const outlierToggle = document.getElementById("price-hist-ignore-outliers");
+  if (outlierToggle && outlierToggle.checked && prices.length > 2) {
+    const threshold = percentile(prices, 0.99);
+    prices = prices.filter((p) => p <= threshold);
+  }
   if (!prices.length) {
     if (priceHistogramChart) {
       priceHistogramChart.destroy();
@@ -289,8 +296,10 @@ window.renderPriceHistogram = function (carList) {
   }
   document.getElementById("priceHistogram").style.display = "";
 
-  // Calculate bins (let's use 12 bins for a good balance)
-  const binCount = 12;
+  // Calculate dynamic number of bins using Sturges' formula, clamped
+  const n = prices.length;
+  const sturges = Math.ceil(Math.log2(n) + 1);
+  const binCount = Math.min(30, Math.max(6, sturges));
   const min = Math.min(...prices);
   const max = Math.max(...prices);
   const binSize = Math.ceil((max - min) / binCount) || 1;
@@ -325,10 +334,10 @@ window.renderPriceHistogram = function (carList) {
         {
           label: "Number of Cars",
           data: bins,
-          backgroundColor: "#818cf8",
+          backgroundColor: "#34d399",
           borderRadius: 8,
           borderWidth: 0,
-          hoverBackgroundColor: "#34d399",
+          hoverBackgroundColor: "#10b981",
         },
       ],
     },
@@ -365,6 +374,124 @@ window.renderPriceHistogram = function (carList) {
     },
   });
 };
+
+// ====== Mileage Histogram (New Tab) ======
+let mileageHistogramChart = null;
+
+window.renderMileageHistogram = function (carList) {
+  let miles = carList
+    .map((c) => (typeof c.miles === "number" ? c.miles : null))
+    // Exclude placeholder/no-info mileages and extreme placeholders
+    .filter((m) => m && m > 0 && m < 900000);
+
+  const outlierToggle = document.getElementById("mileage-hist-ignore-outliers");
+  if (outlierToggle && outlierToggle.checked && miles.length > 2) {
+    const threshold = percentile(miles, 0.99);
+    miles = miles.filter((m) => m <= threshold);
+  }
+
+  if (!miles.length) {
+    if (mileageHistogramChart) {
+      mileageHistogramChart.destroy();
+      mileageHistogramChart = null;
+    }
+    const canvas = document.getElementById("mileageHistogram");
+    if (canvas) canvas.style.display = "none";
+    return;
+  }
+  const canvas = document.getElementById("mileageHistogram");
+  if (canvas) canvas.style.display = "";
+
+  // Dynamic bins via Sturges, clamped
+  const n = miles.length;
+  const sturges = Math.ceil(Math.log2(n) + 1);
+  const binCount = Math.min(30, Math.max(6, sturges));
+  const min = Math.min(...miles);
+  const max = Math.max(...miles);
+  const binSize = Math.ceil((max - min) / binCount) || 1;
+  const bins = Array(binCount).fill(0);
+  miles.forEach((m) => {
+    let idx = Math.floor((m - min) / binSize);
+    if (idx >= binCount) idx = binCount - 1;
+    bins[idx]++;
+  });
+
+  // Labels
+  const binLabels = [];
+  for (let i = 0; i < binCount; i++) {
+    const from = min + i * binSize;
+    const to = from + binSize - 1;
+    binLabels.push(`${from.toLocaleString()}–${to.toLocaleString()} mi`);
+  }
+
+  if (mileageHistogramChart) {
+    mileageHistogramChart.destroy();
+    mileageHistogramChart = null;
+  }
+
+  const ctx = document.getElementById("mileageHistogram").getContext("2d");
+  mileageHistogramChart = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels: binLabels,
+      datasets: [
+        {
+          label: "Number of Cars",
+          data: bins,
+          backgroundColor: "#34d399",
+          borderRadius: 8,
+          borderWidth: 0,
+          hoverBackgroundColor: "#10b981",
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.parsed.y} cars`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { color: "#232329" },
+          ticks: {
+            color: "#e4e4e7",
+            font: { weight: 600 },
+            autoSkip: false,
+            maxRotation: 40,
+            minRotation: 20,
+          },
+        },
+        y: {
+          grid: { color: "#232329" },
+          ticks: {
+            color: "#a1a1aa",
+            precision: 0,
+            beginAtZero: true,
+          },
+        },
+      },
+    },
+  });
+};
+
+// Helper to compute percentile (0..1) using sorted copy and linear interpolation
+function percentile(values, p) {
+  if (!values.length) return 0;
+  const arr = [...values].sort((a, b) => a - b);
+  const pos = (arr.length - 1) * p;
+  const base = Math.floor(pos);
+  const rest = pos - base;
+  if (arr[base + 1] !== undefined) {
+    return arr[base] + rest * (arr[base + 1] - arr[base]);
+  } else {
+    return arr[base];
+  }
+}
 
 // ====== Price Box Plot by Damage Type (Tab 3) ======
 let boxPlotChart = null;
