@@ -5,10 +5,11 @@ let selectedYear = null;
 let yearMap = {};
 let filterOptions = {};
 let currentFilters = {
-  damage: "All",
-  status: "All",
+  damage: [],
+  status: [],
   minPrice: 0,
   maxPrice: 0,
+  special: null,
 };
 let currentSort = {
   by: "price",
@@ -136,58 +137,85 @@ function renderFilterPanel() {
   const dropdowns = document.createElement("div");
   dropdowns.className = "filter-dropdowns";
 
-  // ----- Damage dropdown -----
-  const damageLabel = document.createElement("label");
-  damageLabel.textContent = "Damage";
-  const damageSelect = document.createElement("select");
+  // Helper to create checkbox list
+  const createCheckboxGroup = (labelText, choices, selected, key) => {
+    const group = document.createElement("div");
+    group.className = "checkbox-group";
+    const lbl = document.createElement("label");
+    lbl.textContent = labelText;
+    group.appendChild(lbl);
+    const list = document.createElement("div");
+    list.className = "checkbox-list";
+    choices.forEach((val) => {
+      const safeId = `${key}-` + String(val).replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+      const item = document.createElement("div");
+      item.className = "checkbox-item";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.id = safeId;
+      input.value = val;
+      input.checked = selected.includes(val);
+      const l = document.createElement("label");
+      l.setAttribute("for", safeId);
+      l.textContent = val;
+      input.onchange = (e) => {
+        const arr = currentFilters[key] || [];
+        const checked = e.target.checked;
+        if (checked) {
+          if (!arr.includes(val)) arr.push(val);
+        } else {
+          const idx = arr.indexOf(val);
+          if (idx !== -1) arr.splice(idx, 1);
+        }
+        currentFilters[key] = arr;
+        updateFilteredData();
+      };
+      item.appendChild(input);
+      item.appendChild(l);
+      list.appendChild(item);
+    });
+    group.appendChild(list);
+    return { group, list };
+  };
 
+  // Build choices (respect quick filter)
   const damageChoices =
     currentFilters.special === "clean"
       ? ["Normal wear", "Minor Dent/Scratches"]
-      : filterOptions.damage.filter((d) => {
+      : (filterOptions.damage || []).filter((d) => {
           if (currentFilters.special === "nonRecommended") {
-            // Remove any damage containing "burn" (case-insensitive)
-            if (typeof d === "string" && d.toLowerCase().includes("burn"))
-              return false;
-            // Remove other non-recommended damages
+            if (typeof d === "string" && d.toLowerCase().includes("burn")) return false;
             if (NON_RECOMMENDED_DAMAGES.includes(d)) return false;
           }
           return true;
         });
+  const { group: damageGroup, list: damageList } = createCheckboxGroup(
+    "Damage",
+    damageChoices,
+    currentFilters.damage || [],
+    "damage",
+  );
+  // Limit damage list height when too many options
+  damageList.classList.add("checkbox-list-damage");
+  dropdowns.appendChild(damageGroup);
 
-  damageSelect.innerHTML =
-    `<option value="All">All</option>` +
-    damageChoices.map((d) => `<option value="${d}">${d}</option>`).join("");
+  const statusChoices = filterOptions.status || [];
+  const { group: statusGroup, list: statusList } = createCheckboxGroup(
+    "Status",
+    statusChoices,
+    currentFilters.status || [],
+    "status",
+  );
+  dropdowns.appendChild(statusGroup);
 
-  damageSelect.value = currentFilters.damage;
-  damageSelect.onchange = (e) => {
-    currentFilters.damage = e.target.value;
-    updateFilteredData();
-  };
-  dropdowns.appendChild(damageLabel);
-  dropdowns.appendChild(damageSelect);
-
-  // ----- Status dropdown -----
-  const statusLabel = document.createElement("label");
-  statusLabel.textContent = "Status";
-  const statusSelect = document.createElement("select");
-  statusSelect.innerHTML =
-    `<option value="All">All</option>` +
-    filterOptions.status
-      .map((s) => `<option value="${s}">${s}</option>`)
-      .join("");
-  statusSelect.value = currentFilters.status;
-  statusSelect.onchange = (e) => {
-    currentFilters.status = e.target.value;
-    updateFilteredData();
-  };
-  dropdowns.appendChild(statusLabel);
-  dropdowns.appendChild(statusSelect);
-
-  // Disable dropdowns when “Clean vehicles” is active
+  // Disable when clean active
   const disableDD = currentFilters.special === "clean";
-  damageSelect.disabled = disableDD;
-  statusSelect.disabled = disableDD;
+  if (disableDD) {
+    [damageList, statusList].forEach((list) => {
+      list.classList.add("disabled");
+      list.querySelectorAll("input[type='checkbox']").forEach((el) => (el.disabled = true));
+    });
+  }
 
   // ----- Price sliders -----
   const sliders = document.createElement("div");
@@ -278,10 +306,6 @@ function renderFilterPanel() {
       (btn.style.background = isActive ? "#34d399" : "#27272a");
     btn.onclick = () => {
       currentFilters.special = isActive ? null : key; // toggle
-      if (currentFilters.special === "clean") {
-        currentFilters.damage = "All";
-        currentFilters.status = "All";
-      }
       renderFilterPanel();
       updateFilteredData();
     };
@@ -332,18 +356,21 @@ function applyFilters(data) {
       if (!(okDamage && okStatus)) return false;
     }
 
-    // ---- Regular dropdown filters (ignored when 'clean' is active) ----
+    // ---- Regular checkbox filters (ignored when 'clean' is active) ----
     if (currentFilters.special !== "clean") {
-      if (
-        currentFilters.damage !== "All" &&
-        car.damage !== currentFilters.damage
-      )
+      const damageSelected = Array.isArray(currentFilters.damage)
+        ? currentFilters.damage
+        : [];
+      const statusSelected = Array.isArray(currentFilters.status)
+        ? currentFilters.status
+        : [];
+
+      if (damageSelected.length > 0 && !damageSelected.includes(car.damage)) {
         return false;
-      if (
-        currentFilters.status !== "All" &&
-        car.status !== currentFilters.status
-      )
+      }
+      if (statusSelected.length > 0 && !statusSelected.includes(car.status)) {
         return false;
+      }
     }
 
     // ---- Price sliders ----
@@ -375,6 +402,23 @@ function updateFilteredData() {
   }
   if (window.renderPriceHistogram) {
     window.renderPriceHistogram(applyFilters(carData));
+    const priceOutliersToggle = document.getElementById("price-hist-ignore-outliers");
+    if (priceOutliersToggle && !priceOutliersToggle.hasAttribute("data-listener")) {
+      priceOutliersToggle.addEventListener("change", () => {
+        window.renderPriceHistogram(applyFilters(carData));
+      });
+      priceOutliersToggle.setAttribute("data-listener", "true");
+    }
+  }
+  if (window.renderMileageHistogram) {
+    window.renderMileageHistogram(applyFilters(carData));
+    const mileageOutliersToggle = document.getElementById("mileage-hist-ignore-outliers");
+    if (mileageOutliersToggle && !mileageOutliersToggle.hasAttribute("data-listener")) {
+      mileageOutliersToggle.addEventListener("change", () => {
+        window.renderMileageHistogram(applyFilters(carData));
+      });
+      mileageOutliersToggle.setAttribute("data-listener", "true");
+    }
   }
   if (window.renderPriceBoxPlot) {
     window.renderPriceBoxPlot(filtered);
@@ -655,6 +699,9 @@ document.getElementById("file-input").addEventListener("change", function (e) {
       filterOptions.price = getPriceRange(carData);
       currentFilters.minPrice = filterOptions.price.min;
       currentFilters.maxPrice = filterOptions.price.max;
+      // Select all by default for multi-select filters
+      currentFilters.damage = [...filterOptions.damage];
+      currentFilters.status = [...filterOptions.status];
       // Show filter panel
       renderFilterPanel();
       document.getElementById("graphs-section").style.display = "none";
