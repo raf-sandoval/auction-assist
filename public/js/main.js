@@ -17,10 +17,10 @@ let currentSort = {
 };
 let currentCarList = [];
 
-// Bar colors
-const defaultBarColor = "#818cf8";
-const selectedBarColor = "#34d399"; // teal
-const hoverBarColor = "#fbbf24";
+// Bar colors (teal palette)
+const defaultBarColor = "#34d399"; // primary teal
+const selectedBarColor = "#10b981"; // selected/active teal
+const hoverBarColor = "#6ee7b7"; // hover teal
 
 const NON_RECOMMENDED_DAMAGES = [
   "Burn",
@@ -52,6 +52,14 @@ function getBarColors(years, selectedYear) {
   return years.map((y) =>
     y == selectedYear ? selectedBarColor : defaultBarColor,
   );
+}
+
+function getBarBorderColors(years, selectedYear) {
+  return years.map((y) => (y == selectedYear ? "#ffffff" : "transparent"));
+}
+
+function getBarBorderWidths(years, selectedYear) {
+  return years.map((y) => (y == selectedYear ? 3 : 0));
 }
 
 function getUnique(arr, key) {
@@ -448,7 +456,8 @@ function renderChart(yearMapInput) {
           backgroundColor: barColors,
           borderRadius: 8,
           hoverBackgroundColor: hoverBarColor,
-          borderWidth: 0,
+          borderColor: getBarBorderColors(years, selectedYear),
+          borderWidth: getBarBorderWidths(years, selectedYear),
         },
       ],
     },
@@ -494,6 +503,8 @@ function updateBarColors() {
   if (!chart) return;
   const years = chart.data.labels;
   chart.data.datasets[0].backgroundColor = getBarColors(years, selectedYear);
+  chart.data.datasets[0].borderColor = getBarBorderColors(years, selectedYear);
+  chart.data.datasets[0].borderWidth = getBarBorderWidths(years, selectedYear);
   chart.update();
 }
 

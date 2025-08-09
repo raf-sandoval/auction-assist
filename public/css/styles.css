@@ -1,17 +1,35 @@
+html {
+    background-color: #0b0b10;
+    height: 100%;
+    overscroll-behavior: none;
+}
+
 body {
-    background: radial-gradient(1200px 800px at 10% -10%, #1f2937 0%, #0f172a 40%, #0b0b10 100%);
     color: #e4e4e7;
     font-family: "Inter", system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Helvetica Neue", Arial, sans-serif;
     margin: 0;
     padding: 0;
     min-height: 100vh;
+    min-height: 100dvh;
+    position: relative;
+    overscroll-behavior: none;
+}
+
+/* Fixed gradient background to avoid flicker/white during overscroll */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background: radial-gradient(1200px 800px at 10% -10%, #1f2937 0%, #0f172a 40%, #0b0b10 100%);
+    background-attachment: fixed;
 }
 
 .container {
     max-width: 1000px;
     margin: 40px auto;
     padding: 24px;
-    background: linear-gradient(180deg, rgba(39,39,42,0.9), rgba(24,24,27,0.9));
+    background: linear-gradient(180deg, rgba(39,39,42,0.85), rgba(24,24,27,0.85));
     border-radius: 16px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
     border: 1px solid #2f2f35;
@@ -49,7 +67,7 @@ input[type="file"] {
     gap: 18px;
     align-items: flex-start;
     margin-bottom: 2rem;
-    background: linear-gradient(180deg, rgba(24,24,27,0.9), rgba(17,17,20,0.9));
+    background: linear-gradient(180deg, rgba(24,24,27,0.85), rgba(17,17,20,0.85));
     border-radius: 12px;
     padding: 18px 16px 8px 16px;
     border: 1px solid #2b2b30;
@@ -107,10 +125,31 @@ input[type="file"] {
     margin-bottom: 0.5rem;
     width: 100%;
 }
+/* Unify range slider accent color */
+#filter-panel input[type="range"] {
+    accent-color: #34d399;
+    height: 4px;
+}
 
 /* Checkbox list styling */
-.checkbox-group label {
-    margin-bottom: 0.4rem !important;
+.checkbox-group {
+    position: relative;
+    border: 1px solid #2b2b30;
+    border-radius: 10px;
+    padding: 18px 12px 10px 12px;
+    margin-bottom: 12px;
+    background: transparent;
+}
+.checkbox-group > label {
+    position: absolute;
+    top: -10px;
+    left: 12px;
+    padding: 0 6px;
+    background: #18181b;
+    color: #e4e4e7;
+    font-weight: 600;
+    font-size: 0.98rem;
+    margin: 0 !important;
 }
 .checkbox-list {
     display: flex;
