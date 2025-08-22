@@ -1,0 +1,195 @@
+@@
+ export async function onRequestPost(context) {
+   const { request, env } = context;
+ 
+   try {
+     const input = await request.json();
+ 
+     // Validate required inputs
+     const errors = [];
+     const year = Number(input.year);
+     const price = Number(input.price);
+     const rawLocation = String(input.location || "");
+     const platform = String(input.platform || "").toLowerCase();
+     const vin = String(input.vin || "");
++    const vehicleTypeInput = String(input.vehicleType || "");
+     const engineSize =
+       input.engineSize === undefined || input.engineSize === null
+         ? undefined
+         : Number(input.engineSize);
+ 
+     if (!year || Number.isNaN(year)) errors.push("year is required");
+     if (!price || Number.isNaN(price)) errors.push("price is required");
+     if (!rawLocation) errors.push("location is required");
+     if (!platform || !["copart", "iaai"].includes(platform))
+       errors.push("platform must be 'copart' or 'iaai'");
+     if (!vin) errors.push("vin is required");
++    if (!vehicleTypeInput) errors.push("vehicleType is required");
+ 
+     if (errors.length) {
+       return json({ ok: false, errors }, 400);
+     }
+@@
+     // For each candidate port, compute breakdowns for all vehicle types
+     const perPort = [];
+     for (const g of gruaOptions) {
+       const port = portIndex[g.port];
+       if (!port) {
+         // If a location references a port you don't have rates for, skip it
+         continue;
+       }
+ 
+       const leadWeeks = {
+         min: port.lead_weeks_min || null,
+         max: port.lead_weeks_max || null,
+       };
+ 
+-      const vehicleTypeQuotes = [];
+       const rates = port.shipping_rates || {};
+-      for (const [vehType, fleteUSDraw] of Object.entries(rates)) {
+-        const fleteUSD = Number(fleteUSDraw);
++      const vehKey = matchVehicleTypeKey(rates, vehicleTypeInput);
++      if (!vehKey) {
++        // Skip this port if it doesn't support the requested vehicle type
++        continue;
++      }
++      {
++        const fleteUSD = Number(rates[vehKey]);
+         const fleteLps = round2(fleteUSD * fx);
+ 
+         // CIF for this (port, vehicle type)
+         const cifUSD = round2(
+           price + g.gruaUSD + fleteUSD + seguroUSD + compradorIndirectoUSD,
+         );
+         const cifLps = round2(cifUSD * fx);
+@@
+         const otherLps = sumGroup(componentsLps, OTHER_KEYS);
+ 
+-        vehicleTypeQuotes.push({
+-          vehicleType: vehType,
+-          leadWeeks,
+-          fleteUSD,
+-          fleteLps,
+-          cifUSD,
+-          cifLps,
+-          daiPct,
+-          scPct,
+-          breakdown: {
+-            usd: componentsUSD,
+-            lps: componentsLps,
+-          },
+-          totals: {
+-            usd: {
+-              taxes: taxesUSD,
+-              duties: dutiesUSD,
+-              otherFees: otherUSD,
+-              total: cifUSD + taxesUSD + dutiesUSD + otherUSD,
+-            },
+-            lps: {
+-              taxes: taxesLps,
+-              duties: dutiesLps,
+-              otherFees: otherLps,
+-              total: cifLps + taxesLps + dutiesLps + otherLps,
+-            },
+-          },
+-        });
++        perPort.push({
++          port: g.port,
++          leadWeeks,
++          vehicleType: vehKey,
++          gruaUSD: g.gruaUSD,
++          gruaLps: g.gruaLps,
++          fleteUSD,
++          fleteLps,
++          cifUSD,
++          cifLps,
++          daiPct,
++          scPct,
++          breakdown: {
++            usd: componentsUSD,
++            lps: componentsLps,
++          },
++          totals: {
++            usd: {
++              taxes: taxesUSD,
++              duties: dutiesUSD,
++              otherFees: otherUSD,
++              total: cifUSD + taxesUSD + dutiesUSD + otherUSD,
++            },
++            lps: {
++              taxes: taxesLps,
++              duties: dutiesLps,
++              otherFees: otherLps,
++              total: cifLps + taxesLps + dutiesLps + otherLps,
++            },
++          },
++        });
+       }
+-
+-      perPort.push({
+-        port: g.port,
+-        leadWeeks,
+-        gruaUSD: g.gruaUSD,
+-        gruaLps: g.gruaLps,
+-        vehicleTypeQuotes,
+-      });
+     }
+ 
+     return json({
+       ok: true,
+       asOfFxDate: fxAsOf,
+       input: {
+         year,
+         price,
+         location: rawLocation,
+         platform,
+         vin,
++        vehicleType: vehicleTypeInput,
+         engineSize: isFinite(engineSize) ? engineSize : null,
+         withCafta,
+         category,
+       },
+       fx,
+       matchedLocation: {
+         title: locMatch.title,
+         state: locMatch.state,
+         coordinates: locMatch.coordinates || null,
+       },
+-      results: perPort,
++      results: perPort,
+     });
+@@
+ function indexPorts(portsArr) {
+   const idx = {};
+   for (const p of portsArr || []) {
+     idx[p.port] = p;
+   }
+   return idx;
+ }
+ 
++function canonKey(s) {
++  return String(s || "")
++    .toLowerCase()
++    .replace(/[\s\-]+/g, "_")
++    .replace(/[^a-z0-9_]/g, "");
++}
++
++function matchVehicleTypeKey(rates, inputKey) {
++  if (!rates) return null;
++  const target = canonKey(inputKey);
++  for (const k of Object.keys(rates)) {
++    if (canonKey(k) === target) return k;
++  }
++  return null;
++}
++
+ function findDaiAndSc(feesImport, branch, category, cifUSD) {
+   const ranges = feesImport?.[branch]?.[category] || [];
+   for (const r of ranges) {
+     if (cifUSD >= r.min && cifUSD <= r.max) {
+       return { daiPct: Number(r.dai), scPct: Number(r.sc) };
+     }
+   }
+   // Default fallback if not found
+   return { daiPct: 0, scPct: 0 };
+ }

@@ -9,8 +9,7 @@ export async function onRequestGet(context) {
   }
 
   // Refresh from source (prefer JSON instead of XML to avoid DOMParser)
-  const url =
-    "https://www.cors-anywhere.com/www.bch.hn/_api/web/lists('08a9876c-c6f1-4e73-8d13-0039b0442fab')/items?$select=Title,Fecha,Observacion,Valor&$top=1&$orderby=Fecha%20desc";
+  const url = env.BCH_URL;
 
   // Ask for JSON response to avoid XML parsing server-side
   const res = await fetch(url, {
