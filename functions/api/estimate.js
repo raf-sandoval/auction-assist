@@ -247,13 +247,13 @@ export async function onRequestPost(context) {
               taxes: taxesUSD,
               duties: dutiesUSD,
               otherFees: otherUSD,
-              total: taxesUSD + dutiesUSD + otherUSD,
+              total: cifUSD + taxesUSD + dutiesUSD + otherUSD,
             },
             lps: {
               taxes: taxesLps,
               duties: dutiesLps,
               otherFees: otherLps,
-              total: taxesLps + dutiesLps + otherLps,
+              total: cifLps + taxesLps + dutiesLps + otherLps,
             },
           },
         });
