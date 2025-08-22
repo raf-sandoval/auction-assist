@@ -2,6 +2,6 @@ name = "Auction assist"
 compatibility_date = "2025-08-21"
 
 [[kv_namespaces]]
-binding = "KV_DATA"
+binding = "DATA"
 id = "0b55d4a96f2c413485d4637705d6e863"
 # For local dev you can also set preview_id
