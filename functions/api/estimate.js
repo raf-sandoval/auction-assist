@@ -210,9 +210,24 @@ export async function onRequestPost(context) {
           comision: comisionLps,
         };
 
-        // Grand totals (USD/Lps)
-        const totalUSD = sumValues(componentsUSD);
-        const totalLps = sumValues(componentsLps);
+        // Grouped totals
+        const TAX_KEYS = ["dai", "sc", "isv", "servicioDatos", "ecotasa"];
+        const DUTY_KEYS = [
+          "almacenaje",
+          "tramiteAduanero",
+          "tramitePlacas",
+          "dva",
+          "matriculaIP",
+        ];
+        const OTHER_KEYS = ["transferenciaInternacional", "comision"];
+
+        const taxesUSD = sumGroup(componentsUSD, TAX_KEYS);
+        const dutiesUSD = sumGroup(componentsUSD, DUTY_KEYS);
+        const otherUSD = sumGroup(componentsUSD, OTHER_KEYS);
+
+        const taxesLps = sumGroup(componentsLps, TAX_KEYS);
+        const dutiesLps = sumGroup(componentsLps, DUTY_KEYS);
+        const otherLps = sumGroup(componentsLps, OTHER_KEYS);
 
         vehicleTypeQuotes.push({
           vehicleType: vehType,
@@ -228,8 +243,18 @@ export async function onRequestPost(context) {
             lps: componentsLps,
           },
           totals: {
-            usd: totalUSD,
-            lps: totalLps,
+            usd: {
+              taxes: taxesUSD,
+              duties: dutiesUSD,
+              otherFees: otherUSD,
+              total: taxesUSD + dutiesUSD + otherUSD,
+            },
+            lps: {
+              taxes: taxesLps,
+              duties: dutiesLps,
+              otherFees: otherLps,
+              total: taxesLps + dutiesLps + otherLps,
+            },
           },
         });
       }
@@ -391,6 +416,6 @@ function fixedLempiraFees() {
   };
 }
 
-function sumValues(obj) {
-  return Object.values(obj).reduce((a, b) => a + Number(b || 0), 0);
+function sumGroup(source, keys) {
+  return keys.reduce((sum, k) => sum + Number(source[k] || 0), 0);
 }
