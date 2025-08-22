@@ -11,6 +11,7 @@ export async function onRequestPost(context) {
     const rawLocation = String(input.location || "");
     const platform = String(input.platform || "").toLowerCase();
     const vin = String(input.vin || "");
+    const vehicleTypeInput = String(input.vehicleType || "");
     const engineSize =
       input.engineSize === undefined || input.engineSize === null
         ? undefined
@@ -22,6 +23,7 @@ export async function onRequestPost(context) {
     if (!platform || !["copart", "iaai"].includes(platform))
       errors.push("platform must be 'copart' or 'iaai'");
     if (!vin) errors.push("vin is required");
+    if (!vehicleTypeInput) errors.push("vehicleType is required");
 
     if (errors.length) {
       return json({ ok: false, errors }, 400);
@@ -115,10 +117,14 @@ export async function onRequestPost(context) {
         max: port.lead_weeks_max || null,
       };
 
-      const vehicleTypeQuotes = [];
       const rates = port.shipping_rates || {};
-      for (const [vehType, fleteUSDraw] of Object.entries(rates)) {
-        const fleteUSD = Number(fleteUSDraw);
+      const vehKey = matchVehicleTypeKey(rates, vehicleTypeInput);
+      if (!vehKey) {
+        // Skip this port if it doesn't support the requested vehicle type
+        continue;
+      }
+      {
+        const fleteUSD = Number(rates[vehKey]);
         const fleteLps = round2(fleteUSD * fx);
 
         // CIF for this (port, vehicle type)
@@ -229,9 +235,12 @@ export async function onRequestPost(context) {
         const dutiesLps = sumGroup(componentsLps, DUTY_KEYS);
         const otherLps = sumGroup(componentsLps, OTHER_KEYS);
 
-        vehicleTypeQuotes.push({
-          vehicleType: vehType,
+        perPort.push({
+          port: g.port,
           leadWeeks,
+          vehicleType: vehKey,
+          gruaUSD: g.gruaUSD,
+          gruaLps: g.gruaLps,
           fleteUSD,
           fleteLps,
           cifUSD,
@@ -258,14 +267,6 @@ export async function onRequestPost(context) {
           },
         });
       }
-
-      perPort.push({
-        port: g.port,
-        leadWeeks,
-        gruaUSD: g.gruaUSD,
-        gruaLps: g.gruaLps,
-        vehicleTypeQuotes,
-      });
     }
 
     return json({
@@ -277,6 +278,7 @@ export async function onRequestPost(context) {
         location: rawLocation,
         platform,
         vin,
+        vehicleType: vehicleTypeInput,
         engineSize: isFinite(engineSize) ? engineSize : null,
         withCafta,
         category,
@@ -387,6 +389,22 @@ function indexPorts(portsArr) {
     idx[p.port] = p;
   }
   return idx;
+}
+
+function canonKey(s) {
+  return String(s || "")
+    .toLowerCase()
+    .replace(/[\s\-]+/g, "_")
+    .replace(/[^a-z0-9_]/g, "");
+}
+
+function matchVehicleTypeKey(rates, inputKey) {
+  if (!rates) return null;
+  const target = canonKey(inputKey);
+  for (const k of Object.keys(rates)) {
+    if (canonKey(k) === target) return k;
+  }
+  return null;
 }
 
 function findDaiAndSc(feesImport, branch, category, cifUSD) {
