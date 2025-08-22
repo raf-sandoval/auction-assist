@@ -158,7 +158,7 @@ export async function onRequestPost(context) {
         };
 
         // Matricula IP (USD): 3% of CIF + 800
-        const matriculaLps = round2(0.03 * cifUSD + 800);
+        const matriculaLps = round2(0.03 * cifUSD * fx + 800);
         const matriculaUSD = round2(matriculaLps / fx);
 
         // Bank transfer + commission (USD)
