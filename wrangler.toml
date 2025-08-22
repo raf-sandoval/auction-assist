@@ -1,0 +1,7 @@
+name = "Auction assist"
+compatibility_date = "2025-08-21"
+
+[[kv_namespaces]]
+binding = "DATA"
+id = "your_kv_namespace_id"
+# For local dev you can also set preview_id
