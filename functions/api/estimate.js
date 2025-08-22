@@ -136,9 +136,12 @@ export async function onRequestPost(context) {
         );
 
         const daiUSD = round2((daiPct / 100) * cifUSD);
-        const scUSD = round2((scPct / 100) * cifUSD);
+        const scUSD = round2((scPct / 100) * (cifUSD + daiUSD));
         const daiLps = round2(daiUSD * fx);
         const scLps = round2(scUSD * fx);
+
+        const isvUSD = round2((cifUSD + daiUSD + scUSD) * 0.15);
+        const isvLps = round2((cifLps + daiLps + scLps) * 0.15);
 
         // Ecotasa (Lempiras) by CIF
         const ecoLps = findEcoTaxLps(feesImport, cifUSD);
@@ -155,8 +158,8 @@ export async function onRequestPost(context) {
         };
 
         // Matricula IP (USD): 3% of CIF + 800
-        const matriculaUSD = round2(0.03 * cifUSD + 800);
-        const matriculaLps = round2(matriculaUSD * fx);
+        const matriculaLps = round2(0.03 * cifLps + 800);
+        const matriculaUSD = round2(matriculaUSD * fx);
 
         // Bank transfer + commission (USD)
         const transferenciaUSD = 71;
@@ -174,6 +177,7 @@ export async function onRequestPost(context) {
           cif: cifUSD,
           dai: daiUSD,
           sc: scUSD,
+          isv: isvUSD,
           ecotasa: ecoUSD,
           servicioDatos: feesUSD.servicioDatos,
           dva: feesUSD.dva,
@@ -194,6 +198,7 @@ export async function onRequestPost(context) {
           cif: cifLps,
           dai: daiLps,
           sc: scLps,
+          isv: isvLps,
           ecotasa: ecoLps,
           servicioDatos: feesLps.servicioDatos,
           dva: feesLps.dva,
