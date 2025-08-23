@@ -435,5 +435,5 @@ function fixedLempiraFees() {
 }
 
 function sumGroup(source, keys) {
-  return keys.reduce((sum, k) => sum + Number(source[k] || 0), 0);
+  return round2(keys.reduce((sum, k) => sum + Number(source[k] || 0), 0));
 }
