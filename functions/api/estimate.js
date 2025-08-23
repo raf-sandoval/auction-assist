@@ -117,6 +117,9 @@ export async function onRequestPost(context) {
         max: port.lead_weeks_max || null,
       };
 
+      // Grab coordinates from the ports KV entry
+      const portCoordinates = port.coordinates || null;
+
       const rates = port.shipping_rates || {};
       const vehKey = matchVehicleTypeKey(rates, vehicleTypeInput);
       if (!vehKey) {
@@ -238,6 +241,7 @@ export async function onRequestPost(context) {
         perPort.push({
           port: g.port,
           leadWeeks,
+          portCoordinates,
           vehicleType: vehKey,
           gruaUSD: g.gruaUSD,
           gruaLps: g.gruaLps,
