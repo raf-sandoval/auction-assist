@@ -236,7 +236,7 @@
               const total = computePortTotalUSD(r);
               const sel = r.port === selectedPort ? "selected" : "";
               return `<option value="${r.port}" ${sel}>
-                ${r.port} — ${fmtUSD(total)}
+                ${r.port} — ${fmtLps(total) / fx}
               </option>`;
             })
             .join("")}
