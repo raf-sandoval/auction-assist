@@ -729,7 +729,6 @@ function generateCarListHTML(cars) {
               </button>`
             : ""
         }
-        Calcular
         </button>
         </div>
 `;

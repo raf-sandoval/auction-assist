@@ -424,8 +424,8 @@
               lps.comision,
             )}</td></tr>
             <tr class="receipt-total"><td>TOTAL FUERA DE ADUANA</td><td>${fmtUSD(
-              r.totals.usd.otherFees,
-            )}</td><td>${fmtLps(r.totals.lps.otherFees)}</td></tr>
+              r.totals.usd.total,
+            )}</td><td>${fmtLps(r.totals.lps.total)}</td></tr>
           </tbody>
         </table>
       </div>
