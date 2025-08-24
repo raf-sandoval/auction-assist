@@ -1,0 +1,10 @@
+name = "auction-assist"
+compatibility_date = "2025-08-21"
+
+[[kv_namespaces]]
+binding = "DATA"
+id = "0b55d4a96f2c413485d4637705d6e863"
+experimental_remote = true
+
+[vars]
+BCH_URL = "https://www.bch.hn/_api/web/lists('08a9876c-c6f1-4e73-8d13-0039b0442fab')/items?$select=Title,Fecha,Observacion,Valor&$top=1&$orderby=Fecha desc"

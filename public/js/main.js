@@ -155,7 +155,11 @@ function renderFilterPanel() {
     const list = document.createElement("div");
     list.className = "checkbox-list";
     choices.forEach((val) => {
-      const safeId = `${key}-` + String(val).replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+      const safeId =
+        `${key}-` +
+        String(val)
+          .replace(/[^a-z0-9]+/gi, "-")
+          .toLowerCase();
       const item = document.createElement("div");
       item.className = "checkbox-item";
       const input = document.createElement("input");
@@ -192,7 +196,8 @@ function renderFilterPanel() {
       ? ["Normal wear", "Minor Dent/Scratches"]
       : (filterOptions.damage || []).filter((d) => {
           if (currentFilters.special === "nonRecommended") {
-            if (typeof d === "string" && d.toLowerCase().includes("burn")) return false;
+            if (typeof d === "string" && d.toLowerCase().includes("burn"))
+              return false;
             if (NON_RECOMMENDED_DAMAGES.includes(d)) return false;
           }
           return true;
@@ -221,7 +226,9 @@ function renderFilterPanel() {
   if (disableDD) {
     [damageList, statusList].forEach((list) => {
       list.classList.add("disabled");
-      list.querySelectorAll("input[type='checkbox']").forEach((el) => (el.disabled = true));
+      list
+        .querySelectorAll("input[type='checkbox']")
+        .forEach((el) => (el.disabled = true));
     });
   }
 
@@ -410,8 +417,13 @@ function updateFilteredData() {
   }
   if (window.renderPriceHistogram) {
     window.renderPriceHistogram(applyFilters(carData));
-    const priceOutliersToggle = document.getElementById("price-hist-ignore-outliers");
-    if (priceOutliersToggle && !priceOutliersToggle.hasAttribute("data-listener")) {
+    const priceOutliersToggle = document.getElementById(
+      "price-hist-ignore-outliers",
+    );
+    if (
+      priceOutliersToggle &&
+      !priceOutliersToggle.hasAttribute("data-listener")
+    ) {
       priceOutliersToggle.addEventListener("change", () => {
         window.renderPriceHistogram(applyFilters(carData));
       });
@@ -420,8 +432,13 @@ function updateFilteredData() {
   }
   if (window.renderMileageHistogram) {
     window.renderMileageHistogram(applyFilters(carData));
-    const mileageOutliersToggle = document.getElementById("mileage-hist-ignore-outliers");
-    if (mileageOutliersToggle && !mileageOutliersToggle.hasAttribute("data-listener")) {
+    const mileageOutliersToggle = document.getElementById(
+      "mileage-hist-ignore-outliers",
+    );
+    if (
+      mileageOutliersToggle &&
+      !mileageOutliersToggle.hasAttribute("data-listener")
+    ) {
       mileageOutliersToggle.addEventListener("change", () => {
         window.renderMileageHistogram(applyFilters(carData));
       });
@@ -673,11 +690,25 @@ function showCarList(year, cars) {
 
 function generateCarListHTML(cars) {
   return cars
-    .map(
-      (car) => `
-    <div class="car-item" onclick="window.open('${car.url}', '_blank')">
-      <img class="car-img" src="${car.imageUrl || ""}" alt="car" loading="lazy" />
-      <div class="car-details">
+    .map((car) => {
+      const auction = car.auction || ""; // "Copart" / "IAAI" or blank
+      const eng = typeof car.engine_size === "number" ? car.engine_size : "";
+      const safeUrl = car.url ? car.url.replace(/"/g, "&quot;") : "";
+      const safeImg = (car.imageUrl || "").replace(/"/g, "&quot;");
+      const hasValidPrice =
+        typeof car.price === "number" && isFinite(car.price) && car.price > 0;
+      const dataAttrs = `
+        data-vin="${car.vin || ""}"
+        data-year="${car.year || ""}"
+        data-price="${car.price || 0}"
+        data-location="${(car.location || "").replace(/"/g, "&quot;")}"
+        data-auction="${auction}"
+        data-engine-size="${eng}"
+      `;
+      return `
+        <div class="car-item" ${dataAttrs} onclick="window.open('${safeUrl}', '_blank')">
+        <img class="car-img" src="${car.imageUrl || ""}" alt="car" loading="lazy" />
+        <div class="car-details">
         <div class="car-value car-price">$${car.price ? car.price.toLocaleString() : "N/A"}</div>
         <div class="car-value">${car.miles ? car.miles.toLocaleString() + " mi" : ""}</div>
         <div class="car-value">${car.damage || ""}</div>
@@ -686,10 +717,22 @@ function generateCarListHTML(cars) {
         <div class="car-value"><span class="car-vin">${car.vin || ""}</span></div>
         <div class="car-value">${car.auctionDate || ""}</div>
         <div class="car-value" style="color: #a1a1aa;">${car.year || ""}</div>
-      </div>
-    </div>
-  `,
-    )
+        </div>
+        ${
+          hasValidPrice
+            ? `<button class="calc-btn" title="Calcular importación"
+                onclick="event.stopPropagation(); window.openEstimateModal('${car.vin || ""}')">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M7 2h10a3 3 0 0 1 3 3v14a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3zm0 2a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h10a 1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H7zm2 3h6a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2zm0 4h2a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2zm4 0h2a1 1 0 1 1 0 2h-2a1 1 0 1 1 0-2zM9 15h2a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2zm4 0h2a1 1 0 1 1 0 2h-2a1 1 0 1 1 0-2z"/>
+                </svg>
+                Calcular
+              </button>`
+            : ""
+        }
+        </button>
+        </div>
+`;
+    })
     .join("");
 }
 
@@ -702,6 +745,14 @@ document.getElementById("file-input").addEventListener("change", function (e) {
     try {
       carData = JSON.parse(evt.target.result);
       if (!Array.isArray(carData)) throw new Error("Not an array");
+      // Expose to estimator UI
+      window.carData = carData;
+      if (
+        window.EstimatorUI &&
+        typeof window.EstimatorUI.onNewFileLoaded === "function"
+      ) {
+        window.EstimatorUI.onNewFileLoaded(carData);
+      }
       // Remove duplicates from the loaded data
       carData = removeDuplicates(carData);
       // Populate filter options
@@ -1002,4 +1053,6 @@ showCarList = function (year, cars) {
   } else {
     hideDynamicToolbar();
   }
+  // Make the dataset accessible globally to the estimator module
+  window.carData = carData;
 };

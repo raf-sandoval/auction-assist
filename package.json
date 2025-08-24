@@ -1,5 +1,8 @@
 {
   "name": "auction-assist",
   "version": "1.0.0",
-  "description": "Car auction price analysis tool."
+  "description": "Car auction price analysis tool.",
+  "devDependencies": {
+    "wrangler": "^4.32.0"
+  }
 }
