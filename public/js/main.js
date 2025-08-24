@@ -695,6 +695,8 @@ function generateCarListHTML(cars) {
       const eng = typeof car.engine_size === "number" ? car.engine_size : "";
       const safeUrl = car.url ? car.url.replace(/"/g, "&quot;") : "";
       const safeImg = (car.imageUrl || "").replace(/"/g, "&quot;");
+      const hasValidPrice =
+        typeof car.price === "number" && isFinite(car.price) && car.price > 0;
       const dataAttrs = `
         data-vin="${car.vin || ""}"
         data-year="${car.year || ""}"
@@ -716,11 +718,17 @@ function generateCarListHTML(cars) {
         <div class="car-value">${car.auctionDate || ""}</div>
         <div class="car-value" style="color: #a1a1aa;">${car.year || ""}</div>
         </div>
-        <button class="calc-btn" title="Calcular importación"
-        onclick="event.stopPropagation(); window.openEstimateModal('${car.vin || ""}')">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-        <path d="M7 2h10a3 3 0 0 1 3 3v14a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3zm0 2a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H7zm2 3h6a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2zm0 4h2a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2zm4 0h2a1 1 0 1 1 0 2h-2a1 1 0 1 1 0-2zM9 15h2a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2zm4 0h2a1 1 0 1 1 0 2h-2a1 1 0 1 1 0-2z"/>
-        </svg>
+        ${
+          hasValidPrice
+            ? `<button class="calc-btn" title="Calcular importación"
+                onclick="event.stopPropagation(); window.openEstimateModal('${car.vin || ""}')">
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <path d="M7 2h10a3 3 0 0 1 3 3v14a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V5a3 3 0 0 1 3-3zm0 2a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h10a 1 1 0 0 0 1-1V5a1 1 0 0 0-1-1H7zm2 3h6a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2zm0 4h2a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2zm4 0h2a1 1 0 1 1 0 2h-2a1 1 0 1 1 0-2zM9 15h2a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2zm4 0h2a1 1 0 1 1 0 2h-2a1 1 0 1 1 0-2z"/>
+                </svg>
+                Calcular
+              </button>`
+            : ""
+        }
         Calcular
         </button>
         </div>

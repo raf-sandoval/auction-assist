@@ -204,7 +204,7 @@
     );
   }
 
-  function renderReceipt(res) {
+  function renderReceipt(res, vin) {
     const fx = res.fx;
     const fxDate = res.asOfFxDate;
 
@@ -217,139 +217,217 @@
       `;
     }
 
-    const ports = res.results
-      .map((r) => {
-        const b = r.breakdown || {};
-        const usd = b.usd || {};
-        const lps = b.lps || {};
-        const t = r.totals || {};
-        const tu = t.usd || {};
-        const tl = t.lps || {};
+    // Sort ports by lowest total USD (cheapest first)
+    const sorted = [...res.results].sort(
+      (a, b) => computePortTotalUSD(a) - computePortTotalUSD(b),
+    );
 
-        return `
-        <div class="receipt-port">
-          <h4>${r.port} ${
-            r.leadWeeks && r.leadWeeks.min
-              ? `<span class="receipt-subtle" style="font-weight:400">· ${r.leadWeeks.min}-${r.leadWeeks.max} semanas</span>`
-              : ""
-          }</h4>
+    // Remember previously chosen port per VIN (if any), else choose cheapest
+    const saved = savedByVin[vin] || {};
+    let selectedPort = saved.selectedPort || sorted[0].port;
 
-          <div class="receipt-subtle" style="margin-bottom:8px">
-            Grúa: ${fmtUSD(r.gruaUSD)} · ${fmtLps(r.gruaLps)} — Flete: ${fmtUSD(
-              r.fleteUSD,
-            )} · ${fmtLps(r.fleteLps)}
-          </div>
+    // Build selector with totals shown
+    const selectorHtml = `
+      <div class="port-chooser">
+        <div class="receipt-subtle">Mejor puerto (más barato) primero:</div>
+        <select id="est-port-select">
+          ${sorted
+            .map((r) => {
+              const total = computePortTotalUSD(r);
+              const sel = r.port === selectedPort ? "selected" : "";
+              return `<option value="${r.port}" ${sel}>
+                ${r.port} — ${fmtUSD(total)}
+              </option>`;
+            })
+            .join("")}
+        </select>
+      </div>
+    `;
 
-          <div style="font-weight:800;color:#fafafa;margin-top:8px;margin-bottom:6px;">
-            Calculo CIF
-          </div>
-          <table class="receipt-table">
-            <tbody>
-              <tr><td>Valor factura</td><td>${fmtUSD(usd.price)}</td><td>${fmtLps(
-                lps.price,
-              )}</td></tr>
-              <tr><td>Grúa</td><td>${fmtUSD(usd.grua)}</td><td>${fmtLps(
-                lps.grua,
-              )}</td></tr>
-              <tr><td>Flete</td><td>${fmtUSD(usd.flete)}</td><td>${fmtLps(
-                lps.flete,
-              )}</td></tr>
-              <tr><td>Seguro</td><td>${fmtUSD(usd.seguro)}</td><td>${fmtLps(
-                lps.seguro,
-              )}</td></tr>
-              <tr><td>Comprador indirecto</td><td>${fmtUSD(
-                usd.compradorIndirecto,
-              )}</td><td>${fmtLps(lps.compradorIndirecto)}</td></tr>
-              <tr class="receipt-total"><td>VALOR CIF</td><td>${fmtUSD(
-                r.cifUSD,
-              )}</td><td>${fmtLps(r.cifLps)}</td></tr>
-            </tbody>
-          </table>
+    // Initial port content
+    const current = sorted.find((r) => r.port === selectedPort) || sorted[0];
 
-          <div style="font-weight:800;color:#fafafa;margin-top:12px;margin-bottom:6px;">
-            Detalles de impuestos a pagar
-          </div>
-          <table class="receipt-table">
-            <tbody>
-              <tr><td>Derecho Arancelario de Importación (DAI)</td><td>${fmtUSD(
-                usd.dai,
-              )}</td><td>${fmtLps(lps.dai)}</td></tr>
-              <tr><td>Selectivo al Consumo (SC)</td><td>${fmtUSD(
-                usd.sc,
-              )}</td><td>${fmtLps(lps.sc)}</td></tr>
-              <tr><td>ISV</td><td>${fmtUSD(usd.isv)}</td><td>${fmtLps(
-                lps.isv,
-              )}</td></tr>
-              <tr><td>Servicio de Datos</td><td>${fmtUSD(
-                usd.servicioDatos,
-              )}</td><td>${fmtLps(lps.servicioDatos)}</td></tr>
-              <tr><td>Ecotasa</td><td>${fmtUSD(usd.ecotasa)}</td><td>${fmtLps(
-                lps.ecotasa,
-              )}</td></tr>
-              <tr class="receipt-total"><td>IMPUESTOS TOTALES</td><td>${fmtUSD(
-                (res?.resultsTotalsHack && res.resultsTotalsHack.taxesUSD) ||
-                  r.totals.usd.taxes,
-              )}</td><td>${fmtLps(
-                (res?.resultsTotalsHack && res.resultsTotalsHack.taxesLps) ||
-                  r.totals.lps.taxes,
-              )}</td></tr>
-            </tbody>
-          </table>
+    const portContent = renderPortReceipt(current, fx, fxDate);
 
-          <div style="font-weight:800;color:#fafafa;margin-top:12px;margin-bottom:6px;">
-            Gastos de trámite aduanero
-          </div>
-          <table class="receipt-table">
-            <tbody>
-              <tr><td>Estimado almacenaje</td><td>${fmtUSD(
-                usd.almacenaje,
-              )}</td><td>${fmtLps(lps.almacenaje)}</td></tr>
-              <tr><td>Trámite aduanero</td><td>${fmtUSD(
-                usd.tramiteAduanero,
-              )}</td><td>${fmtLps(lps.tramiteAduanero)}</td></tr>
-              <tr><td>Trámite de placas</td><td>${fmtUSD(
-                usd.tramitePlacas,
-              )}</td><td>${fmtLps(lps.tramitePlacas)}</td></tr>
-              <tr><td>DVA</td><td>${fmtUSD(usd.dva)}</td><td>${fmtLps(
-                lps.dva,
-              )}</td></tr>
-              <tr><td>Matrícula IP Aprox</td><td>${fmtUSD(
-                usd.matriculaIP,
-              )}</td><td>${fmtLps(lps.matriculaIP)}</td></tr>
-              <tr class="receipt-total"><td>TOTAL ADUANAS</td><td>${fmtUSD(
-                r.totals.usd.duties,
-              )}</td><td>${fmtLps(r.totals.lps.duties)}</td></tr>
-            </tbody>
-          </table>
-
-          <div style="font-weight:800;color:#fafafa;margin-top:12px;margin-bottom:6px;">
-            Otros gastos
-          </div>
-          <table class="receipt-table">
-            <tbody>
-              <tr><td>Transferencia internacional</td><td>${fmtUSD(
-                usd.transferenciaInternacional,
-              )}</td><td>${fmtLps(lps.transferenciaInternacional)}</td></tr>
-              <tr><td>Comisión</td><td>${fmtUSD(usd.comision)}</td><td>${fmtLps(
-                lps.comision,
-              )}</td></tr>
-              <tr class="receipt-total"><td>TOTAL FUERA DE ADUANA</td><td>${fmtUSD(
-                r.totals.usd.otherFees,
-              )}</td><td>${fmtLps(r.totals.lps.otherFees)}</td></tr>
-            </tbody>
-          </table>
-        </div>
-        `;
-      })
-      .join("");
-
-    return `
+    // Container with selector + single port content
+    const html = `
       <div class="receipt">
         <div class="receipt-head">
           <div class="receipt-title">Factor de cambio utilizado: ${fx}</div>
           <div class="receipt-subtle">actualizado ${fxDate}</div>
         </div>
-        ${ports}
+        ${selectorHtml}
+        <div id="port-receipt-container">
+          ${portContent}
+        </div>
+      </div>
+    `;
+
+    // After HTML is injected (caller sets bodyEl.innerHTML), we wire change
+    queueMicrotask(() => {
+      const sel = document.getElementById("est-port-select");
+      if (sel) {
+        sel.onchange = () => {
+          const name = sel.value;
+          const match = sorted.find((r) => r.port === name) || sorted[0];
+          // Save selection for this VIN
+          savedByVin[vin] = savedByVin[vin] || {};
+          savedByVin[vin].selectedPort = name;
+          document.getElementById("port-receipt-container").innerHTML =
+            renderPortReceipt(match, fx, fxDate);
+        };
+      }
+    });
+
+    return html;
+  }
+
+  function computePortTotalUSD(r) {
+    const t = r?.totals?.usd?.total;
+    if (typeof t === "number" && isFinite(t)) return t;
+    const taxes = r?.totals?.usd?.taxes || 0;
+    const duties = r?.totals?.usd?.duties || 0;
+    const other = r?.totals?.usd?.otherFees || 0;
+    const cif = r?.cifUSD || 0;
+    return taxes + duties + other + cif;
+  }
+
+  function renderPortReceipt(r, fx, fxDate) {
+    const b = r.breakdown || {};
+    const usd = b.usd || {};
+    const lps = b.lps || {};
+
+    // Column widths via colgroup keep alignment across sections
+    const colgroup = `
+      <colgroup>
+        <col class="col-label" />
+        <col class="col-usd" />
+        <col class="col-lps" />
+      </colgroup>
+    `;
+
+    const daiLabel = `Derecho Arancelario de Importación (DAI) (${Number(
+      r.daiPct || 0,
+    ).toFixed(0)}%)`;
+    const scLabel = `Selectivo al Consumo (SC) (${Number(r.scPct || 0).toFixed(
+      0,
+    )}%)`;
+
+    return `
+      <div class="receipt-port">
+        <h4>
+          ${r.port}
+          ${
+            r.leadWeeks && r.leadWeeks.min
+              ? `<span class="receipt-subtle" style="font-weight:400">· ${r.leadWeeks.min}-${r.leadWeeks.max} semanas</span>`
+              : ""
+          }
+        </h4>
+
+        <div class="receipt-subtle" style="margin-bottom:8px">
+          Grúa: ${fmtUSD(r.gruaUSD)} · ${fmtLps(r.gruaLps)} — Flete: ${fmtUSD(
+            r.fleteUSD,
+          )} · ${fmtLps(r.fleteLps)}
+        </div>
+
+        <div style="font-weight:800;color:#fafafa;margin-top:8px;margin-bottom:6px;">
+          Calculo CIF
+        </div>
+        <table class="receipt-table">
+          ${colgroup}
+          <tbody>
+            <tr><td>Valor factura</td><td>${fmtUSD(usd.price)}</td><td>${fmtLps(
+              lps.price,
+            )}</td></tr>
+            <tr><td>Grúa</td><td>${fmtUSD(usd.grua)}</td><td>${fmtLps(
+              lps.grua,
+            )}</td></tr>
+            <tr><td>Flete</td><td>${fmtUSD(usd.flete)}</td><td>${fmtLps(
+              lps.flete,
+            )}</td></tr>
+            <tr><td>Seguro</td><td>${fmtUSD(usd.seguro)}</td><td>${fmtLps(
+              lps.seguro,
+            )}</td></tr>
+            <tr><td>Comprador indirecto</td><td>${fmtUSD(
+              usd.compradorIndirecto,
+            )}</td><td>${fmtLps(lps.compradorIndirecto)}</td></tr>
+            <tr class="receipt-total"><td>VALOR CIF</td><td>${fmtUSD(
+              r.cifUSD,
+            )}</td><td>${fmtLps(r.cifLps)}</td></tr>
+          </tbody>
+        </table>
+
+        <div style="font-weight:800;color:#fafafa;margin-top:12px;margin-bottom:6px;">
+          Detalles de impuestos a pagar
+        </div>
+        <table class="receipt-table">
+          ${colgroup}
+          <tbody>
+            <tr><td>${daiLabel}</td><td>${fmtUSD(usd.dai)}</td><td>${fmtLps(
+              lps.dai,
+            )}</td></tr>
+            <tr><td>${scLabel}</td><td>${fmtUSD(usd.sc)}</td><td>${fmtLps(
+              lps.sc,
+            )}</td></tr>
+            <tr><td>ISV</td><td>${fmtUSD(usd.isv)}</td><td>${fmtLps(
+              lps.isv,
+            )}</td></tr>
+            <tr><td>Servicio de Datos</td><td>${fmtUSD(
+              usd.servicioDatos,
+            )}</td><td>${fmtLps(lps.servicioDatos)}</td></tr>
+            <tr><td>Ecotasa</td><td>${fmtUSD(usd.ecotasa)}</td><td>${fmtLps(
+              lps.ecotasa,
+            )}</td></tr>
+            <tr class="receipt-total"><td>IMPUESTOS TOTALES</td><td>${fmtUSD(
+              r.totals.usd.taxes,
+            )}</td><td>${fmtLps(r.totals.lps.taxes)}</td></tr>
+          </tbody>
+        </table>
+
+        <div style="font-weight:800;color:#fafafa;margin-top:12px;margin-bottom:6px;">
+          Gastos de trámite aduanero
+        </div>
+        <table class="receipt-table">
+          ${colgroup}
+          <tbody>
+            <tr><td>Estimado almacenaje</td><td>${fmtUSD(
+              usd.almacenaje,
+            )}</td><td>${fmtLps(lps.almacenaje)}</td></tr>
+            <tr><td>Trámite aduanero</td><td>${fmtUSD(
+              usd.tramiteAduanero,
+            )}</td><td>${fmtLps(lps.tramiteAduanero)}</td></tr>
+            <tr><td>Trámite de placas</td><td>${fmtUSD(
+              usd.tramitePlacas,
+            )}</td><td>${fmtLps(lps.tramitePlacas)}</td></tr>
+            <tr><td>DVA</td><td>${fmtUSD(usd.dva)}</td><td>${fmtLps(
+              lps.dva,
+            )}</td></tr>
+            <tr><td>Matrícula IP Aprox</td><td>${fmtUSD(
+              usd.matriculaIP,
+            )}</td><td>${fmtLps(lps.matriculaIP)}</td></tr>
+            <tr class="receipt-total"><td>TOTAL ADUANAS</td><td>${fmtUSD(
+              r.totals.usd.duties,
+            )}</td><td>${fmtLps(r.totals.lps.duties)}</td></tr>
+          </tbody>
+        </table>
+
+        <div style="font-weight:800;color:#fafafa;margin-top:12px;margin-bottom:6px;">
+          Otros gastos
+        </div>
+        <table class="receipt-table">
+          ${colgroup}
+          <tbody>
+            <tr><td>Transferencia internacional</td><td>${fmtUSD(
+              usd.transferenciaInternacional,
+            )}</td><td>${fmtLps(lps.transferenciaInternacional)}</td></tr>
+            <tr><td>Comisión</td><td>${fmtUSD(usd.comision)}</td><td>${fmtLps(
+              lps.comision,
+            )}</td></tr>
+            <tr class="receipt-total"><td>TOTAL FUERA DE ADUANA</td><td>${fmtUSD(
+              r.totals.usd.otherFees,
+            )}</td><td>${fmtLps(r.totals.lps.otherFees)}</td></tr>
+          </tbody>
+        </table>
       </div>
     `;
   }
@@ -422,7 +500,7 @@
               }
             </div>
           </div>
-          ${renderReceipt(res)}
+          ${renderReceipt(res, car.vin)}
           <div class="modal-actions" style="margin-top:12px">
             <button class="btn-primary" id="est-close">Cerrar</button>
           </div>

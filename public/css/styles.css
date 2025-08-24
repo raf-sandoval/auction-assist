@@ -921,3 +921,41 @@ input[type="file"] {
     font-weight: 800;
     color: #fafafa;
 }
+
+/* Keep modal body from growing too tall */
+.modal-body {
+    max-height: 75vh;
+    overflow: auto;
+}
+
+/* Align columns across sections and use tabular numbers */
+.receipt-table {
+    table-layout: fixed;
+}
+.receipt-table th,
+.receipt-table td {
+    font-variant-numeric: tabular-nums;
+}
+.receipt-table col.col-label {
+    width: 48%;
+}
+.receipt-table col.col-usd,
+.receipt-table col.col-lps {
+    width: 26%;
+}
+
+/* Port selector */
+.port-chooser {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0 12px 0;
+}
+.port-chooser select {
+    background: #27272a;
+    color: #e4e4e7;
+    border: 1px solid #3f3f46;
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 1rem;
+}
