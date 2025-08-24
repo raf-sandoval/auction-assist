@@ -111,13 +111,13 @@
                         >
                             Price Histogram
                         </button>
-                     <button
-                         class="graphs-tab"
-                         data-tab="mileage"
-                         onclick="selectGraphsTab('mileage')"
-                     >
-                         Mileage Histogram
-                     </button>
+                        <button
+                            class="graphs-tab"
+                            data-tab="mileage"
+                            onclick="selectGraphsTab('mileage')"
+                        >
+                            Mileage Histogram
+                        </button>
                         <button
                             class="graphs-tab"
                             data-tab="tab3"
@@ -153,27 +153,33 @@
                         id="graphs-tab-tab2"
                         style="display: none"
                     >
-                         <div class="histogram-controls">
-                             <label>
-                                 <input type="checkbox" id="price-hist-ignore-outliers" />
-                                 Ignore outliers (99th percentile)
-                             </label>
-                         </div>
+                        <div class="histogram-controls">
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    id="price-hist-ignore-outliers"
+                                />
+                                Ignore outliers (99th percentile)
+                            </label>
+                        </div>
                         <canvas id="priceHistogram" height="180"></canvas>
                     </div>
-                     <div
-                         class="graphs-tab-content"
-                         id="graphs-tab-mileage"
-                         style="display: none"
-                     >
-                         <div class="histogram-controls">
-                             <label>
-                                 <input type="checkbox" id="mileage-hist-ignore-outliers" />
-                                 Ignore outliers (99th percentile)
-                             </label>
-                         </div>
-                         <canvas id="mileageHistogram" height="180"></canvas>
-                     </div>
+                    <div
+                        class="graphs-tab-content"
+                        id="graphs-tab-mileage"
+                        style="display: none"
+                    >
+                        <div class="histogram-controls">
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    id="mileage-hist-ignore-outliers"
+                                />
+                                Ignore outliers (99th percentile)
+                            </label>
+                        </div>
+                        <canvas id="mileageHistogram" height="180"></canvas>
+                    </div>
                     <div
                         class="graphs-tab-content"
                         id="graphs-tab-tab3"
@@ -250,5 +256,6 @@
         </div>
         <script src="/js/main.js"></script>
         <script src="/js/graphs.js"></script>
+        <script src="/js/estimate-ui.js"></script>
     </body>
 </html>
