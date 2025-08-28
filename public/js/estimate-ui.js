@@ -318,6 +318,10 @@
         ? `<tr><td>Vehículo antiguo (Ley)</td><td>${fmtUSD(usd.vehiculoAntiguo)}</td><td>${fmtLps(lps.vehiculoAntiguo)}</td></tr>`
         : "";
 
+    const isOldVehicle =
+      (usd.vehiculoAntiguo || lps.vehiculoAntiguo) &&
+      Number(lps.vehiculoAntiguo) > 0;
+
     return `
       <div class="receipt-port">
         <h4>
@@ -368,28 +372,35 @@
         <table class="receipt-table">
           ${colgroup}
           <tbody>
-            <tr><td>${daiLabel}</td><td>${fmtUSD(usd.dai)}</td><td>${fmtLps(
-              lps.dai,
-            )}</td></tr>
-            <tr><td>${scLabel}</td><td>${fmtUSD(usd.sc)}</td><td>${fmtLps(
-              lps.sc,
-            )}</td></tr>
-            <tr><td>ISV</td><td>${fmtUSD(usd.isv)}</td><td>${fmtLps(
-              lps.isv,
-            )}</td></tr>
-            <tr><td>Servicio de Datos</td><td>${fmtUSD(
-              usd.servicioDatos,
-            )}</td><td>${fmtLps(lps.servicioDatos)}</td></tr>
-            <tr><td>Ecotasa</td><td>${fmtUSD(usd.ecotasa)}</td><td>${fmtLps(
-              lps.ecotasa,
-            )}</td></tr>
-           ${oldTaxRow}
+            ${
+              isOldVehicle
+                ? `${oldTaxRow}`
+                : `<tr><td>${daiLabel}</td><td>${fmtUSD(usd.dai)}</td><td>${fmtLps(
+                    lps.dai,
+                  )}</td></tr>
+                <tr><td>${scLabel}</td><td>${fmtUSD(usd.sc)}</td><td>${fmtLps(
+                  lps.sc,
+                )}</td></tr>
+                <tr><td>ISV</td><td>${fmtUSD(usd.isv)}</td><td>${fmtLps(
+                  lps.isv,
+                )}</td></tr>
+                <tr><td>Servicio de Datos</td><td>${fmtUSD(
+                  usd.servicioDatos,
+                )}</td><td>${fmtLps(lps.servicioDatos)}</td></tr>
+                <tr><td>Ecotasa</td><td>${fmtUSD(usd.ecotasa)}</td><td>${fmtLps(
+                  lps.ecotasa,
+                )}</td></tr>`
+            }
             <tr class="receipt-total"><td>IMPUESTOS TOTALES</td><td>${fmtUSD(
               r.totals.usd.taxes,
             )}</td><td>${fmtLps(r.totals.lps.taxes)}</td></tr>
           </tbody>
         </table>
 
+        ${
+          isOldVehicle
+            ? ""
+            : `
         <div style="font-weight:800;color:#fafafa;margin-top:12px;margin-bottom:6px;">
           Gastos de trámite aduanero
         </div>
@@ -416,6 +427,8 @@
             )}</td><td>${fmtLps(r.totals.lps.duties)}</td></tr>
           </tbody>
         </table>
+        `
+        }
 
         <div style="font-weight:800;color:#fafafa;margin-top:12px;margin-bottom:6px;">
           Otros gastos
