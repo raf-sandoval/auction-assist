@@ -516,7 +516,8 @@ function renderChart(yearMapInput) {
           const idx = elements[0].index;
           const years = chart.data.labels;
           const year = years[idx];
-          selectedYear = year;
+          // selectedYear = year;
+          selectedYear = selectedYear === year ? null : year;
           updateBarColors();
           updateFilteredData();
         }
@@ -543,30 +544,6 @@ function renderSortPanel() {
   if (!currentCarList.length) {
     sortPanel.style.display = "none";
     return;
-  }
-
-  // Show All Years button (only show when a specific year is selected)
-  if (selectedYear) {
-    const showAllBtn = document.createElement("button");
-    showAllBtn.textContent = "Show All Years";
-    showAllBtn.style.background = "#6366f1";
-    showAllBtn.style.color = "#fff";
-    showAllBtn.style.border = "none";
-    showAllBtn.style.borderRadius = "6px";
-    showAllBtn.style.padding = "7px 18px";
-    showAllBtn.style.fontSize = "1rem";
-    showAllBtn.style.fontWeight = "600";
-    showAllBtn.style.cursor = "pointer";
-    showAllBtn.style.transition = "background 0.15s";
-    showAllBtn.style.marginRight = "1rem";
-    showAllBtn.onmouseover = () => (showAllBtn.style.background = "#4f46e5");
-    showAllBtn.onmouseout = () => (showAllBtn.style.background = "#6366f1");
-    showAllBtn.onclick = function () {
-      selectedYear = null;
-      updateBarColors();
-      updateFilteredData();
-    };
-    sortPanel.appendChild(showAllBtn);
   }
 
   // Sort by dropdown
