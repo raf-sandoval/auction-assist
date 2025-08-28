@@ -383,7 +383,7 @@
             <tr><td>Ecotasa</td><td>${fmtUSD(usd.ecotasa)}</td><td>${fmtLps(
               lps.ecotasa,
             )}</td></tr>
-           ${vehiculoAntiguo}
+           ${oldTaxRow}
             <tr class="receipt-total"><td>IMPUESTOS TOTALES</td><td>${fmtUSD(
               r.totals.usd.taxes,
             )}</td><td>${fmtLps(r.totals.lps.taxes)}</td></tr>
