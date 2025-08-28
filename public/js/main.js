@@ -508,7 +508,7 @@ function renderChart(yearMapInput) {
           const year = years[idx];
           selectedYear = year;
           updateBarColors();
-          showCarList(year, yearMap[year]);
+          updateFilteredData();
         }
       },
     },

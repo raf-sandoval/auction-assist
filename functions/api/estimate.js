@@ -94,11 +94,11 @@ export async function onRequestPost(context) {
     const withCafta = /^[1457]/.test(vin.trim());
     const feeBranch = withCafta ? "withCafta" : "withoutCafta";
 
-    // Category by engine size
-    const category =
-      typeof engineSize === "number" && engineSize > 0 && engineSize <= 1.5
-        ? "smallEngine_1_5lOrLess"
-        : "turismoCamioneta";
+    // Category by vehicle type + engine size
+    const category = resolveImportCategory(
+      String(input.vehicleType || ""),
+      engineSize,
+    );
 
     // Pre-index ports by name for quick lookup
     const portIndex = indexPorts(portsBlob);
@@ -153,8 +153,8 @@ export async function onRequestPost(context) {
         const isvLps = round2((cifLps + daiLps + scLps) * 0.15);
 
         // Ecotasa (Lempiras) by CIF
-        const ecoLps = findEcoTaxLps(feesImport, cifUSD);
-        const ecoUSD = round2(ecoLps / fx);
+        let ecoLps = findEcoTaxLps(feesImport, cifUSD);
+        let ecoUSD = round2(ecoLps / fx);
 
         // Fixed Lempiras fees (both Lps & converted USD)
         const feesLps = fixedLempiraFees();
@@ -170,6 +170,16 @@ export async function onRequestPost(context) {
         const matriculaLps = round2(0.03 * cifUSD * fx + 800);
         const matriculaUSD = round2(matriculaLps / fx);
 
+        // Special rule: vehicles with model year <= 2005
+        const isOld = Number(year) && Number(year) <= 2005;
+        let oldFeeUSD = 0;
+        let oldFeeLps = 0;
+        if (isOld) {
+          // Replace normal import taxes with a flat L 21,000
+          oldFeeLps = 21000;
+          oldFeeUSD = round2(oldFeeLps / fx);
+        }
+
         // Bank transfer + commission (USD)
         const transferenciaUSD = 71;
         const comisionUSD = 300;
@@ -184,11 +194,12 @@ export async function onRequestPost(context) {
           seguro: seguroUSD,
           compradorIndirecto: compradorIndirectoUSD,
           cif: cifUSD,
-          dai: daiUSD,
-          sc: scUSD,
-          isv: isvUSD,
-          ecotasa: ecoUSD,
-          servicioDatos: feesUSD.servicioDatos,
+          dai: isOld ? 0 : daiUSD,
+          sc: isOld ? 0 : scUSD,
+          isv: isOld ? 0 : isvUSD,
+          ecotasa: isOld ? 0 : ecoUSD,
+          servicioDatos: isOld ? 0 : feesUSD.servicioDatos,
+          vehiculoAntiguo: isOld ? oldFeeUSD : 0,
           dva: feesUSD.dva,
           almacenaje: feesUSD.almacenaje,
           tramiteAduanero: feesUSD.tramiteAduanero,
@@ -205,11 +216,12 @@ export async function onRequestPost(context) {
           seguro: seguroLps,
           compradorIndirecto: compradorIndirectoLps,
           cif: cifLps,
-          dai: daiLps,
-          sc: scLps,
-          isv: isvLps,
-          ecotasa: ecoLps,
-          servicioDatos: feesLps.servicioDatos,
+          dai: isOld ? 0 : daiLps,
+          sc: isOld ? 0 : scLps,
+          isv: isOld ? 0 : isvLps,
+          ecotasa: isOld ? 0 : ecoLps,
+          servicioDatos: isOld ? 0 : feesLps.servicioDatos,
+          vehiculoAntiguo: isOld ? oldFeeLps : 0,
           dva: feesLps.dva,
           almacenaje: feesLps.almacenaje,
           tramiteAduanero: feesLps.tramiteAduanero,
@@ -220,7 +232,14 @@ export async function onRequestPost(context) {
         };
 
         // Grouped totals
-        const TAX_KEYS = ["dai", "sc", "isv", "servicioDatos", "ecotasa"];
+        const TAX_KEYS = [
+          "dai",
+          "sc",
+          "isv",
+          "servicioDatos",
+          "ecotasa",
+          "vehiculoAntiguo", // flat fee when year <= 2005
+        ];
         const DUTY_KEYS = [
           "almacenaje",
           "tramiteAduanero",
@@ -400,6 +419,23 @@ function canonKey(s) {
     .toLowerCase()
     .replace(/[\s\-]+/g, "_")
     .replace(/[^a-z0-9_]/g, "");
+}
+
+function resolveImportCategory(vehicleTypeInput, engineSize) {
+  const key = canonKey(vehicleTypeInput);
+  // Known pickup-like shipping rate keys
+  const pickupKeys = new Set([
+    "single_cab_trucks",
+    "regular_cab_half_trucks",
+    "high_cab_double_trucks",
+    "extra_large_trucks",
+  ]);
+  if (pickupKeys.has(key)) return "pickup";
+  // Default by engine size (for cars/SUVs)
+  if (typeof engineSize === "number" && engineSize > 0 && engineSize <= 1.5) {
+    return "smallEngine_1_5lOrLess";
+  }
+  return "turismoCamioneta";
 }
 
 function matchVehicleTypeKey(rates, inputKey) {

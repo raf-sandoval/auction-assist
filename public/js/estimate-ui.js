@@ -312,6 +312,11 @@
     const scLabel = `Selectivo al Consumo (SC) (${Number(r.scPct || 0).toFixed(
       0,
     )}%)`;
+    const oldTaxRow =
+      (usd.vehiculoAntiguo || lps.vehiculoAntiguo) &&
+      Number(lps.vehiculoAntiguo) > 0
+        ? `<tr><td>Vehículo antiguo (Ley)</td><td>${fmtUSD(usd.vehiculoAntiguo)}</td><td>${fmtLps(lps.vehiculoAntiguo)}</td></tr>`
+        : "";
 
     return `
       <div class="receipt-port">
@@ -378,6 +383,7 @@
             <tr><td>Ecotasa</td><td>${fmtUSD(usd.ecotasa)}</td><td>${fmtLps(
               lps.ecotasa,
             )}</td></tr>
+           ${vehiculoAntiguo}
             <tr class="receipt-total"><td>IMPUESTOS TOTALES</td><td>${fmtUSD(
               r.totals.usd.taxes,
             )}</td><td>${fmtLps(r.totals.lps.taxes)}</td></tr>
