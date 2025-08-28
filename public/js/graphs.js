@@ -497,24 +497,35 @@ function percentile(values, p) {
 let boxPlotChart = null;
 
 window.renderPriceBoxPlot = function (carList) {
-  console.log("Rendering box plot with", carList.length, "cars");
-
   // Only show if there is at least one car with price > 0
   const validCars = carList.filter(
     (c) => typeof c.price === "number" && c.price > 0 && c.damage,
   );
-
-  console.log("Valid cars for box plot:", validCars.length);
 
   if (!validCars.length) {
     if (boxPlotChart) {
       boxPlotChart.destroy();
       boxPlotChart = null;
     }
-    document.getElementById("boxPlotChart").style.display = "none";
+    const canvas = document.getElementById("boxPlotChart");
+    if (canvas) canvas.style.display = "none";
+    let msg = document.getElementById("boxPlotMessage");
+    if (!msg) {
+      msg = document.createElement("p");
+      msg.id = "boxPlotMessage";
+      msg.style.cssText =
+        "text-align:center;color:#a1a1aa;padding:40px;margin:0;";
+      const parent = canvas ? canvas.parentElement : null;
+      if (parent) parent.appendChild(msg);
+    }
+    msg.textContent = "Not enough data for box plots";
+    msg.style.display = "";
     return;
   }
-  document.getElementById("boxPlotChart").style.display = "";
+  const canvas = document.getElementById("boxPlotChart");
+  if (canvas) canvas.style.display = "";
+  const msg = document.getElementById("boxPlotMessage");
+  if (msg) msg.style.display = "none";
 
   // Group cars by damage type
   const damageGroups = {};
@@ -524,24 +535,29 @@ window.renderPriceBoxPlot = function (carList) {
     damageGroups[damage].push(car.price);
   });
 
-  console.log("Damage groups:", damageGroups);
-
   // Filter out damage types with fewer than 2 cars (lowered threshold)
   const filteredGroups = Object.fromEntries(
     Object.entries(damageGroups).filter(([_, prices]) => prices.length >= 2),
   );
-
-  console.log("Filtered groups:", filteredGroups);
 
   if (!Object.keys(filteredGroups).length) {
     if (boxPlotChart) {
       boxPlotChart.destroy();
       boxPlotChart = null;
     }
-    const canvas = document.getElementById("boxPlotChart");
-    const container = canvas.parentElement;
-    container.innerHTML =
-      '<p style="text-align:center;color:#a1a1aa;padding:40px;">Not enough data for box plots (need at least 2 cars per damage type)</p>';
+    if (canvas) canvas.style.display = "none";
+    let msg = document.getElementById("boxPlotMessage");
+    if (!msg) {
+      msg = document.createElement("p");
+      msg.id = "boxPlotMessage";
+      msg.style.cssText =
+        "text-align:center;color:#a1a1aa;padding:40px;margin:0;";
+      const parent = canvas ? canvas.parentElement : null;
+      if (parent) parent.appendChild(msg);
+    }
+    msg.textContent =
+      "Not enough data for box plots (need at least 2 cars per damage type)";
+    msg.style.display = "";
     return;
   }
 
@@ -563,8 +579,6 @@ window.renderPriceBoxPlot = function (carList) {
       borderWidth: 2,
     },
   ];
-
-  console.log("Chart data:", { labels, datasets });
 
   // Destroy previous chart if exists
   if (boxPlotChart) {
@@ -633,16 +647,16 @@ window.renderPriceBoxPlot = function (carList) {
         },
       },
     });
-    console.log("Box plot chart created successfully");
   } catch (error) {
-    console.error("Error creating box plot:", error);
+    console.error("Error creating box plot, falling back to bar:", error);
     renderDamageBarChart(filteredGroups);
   }
 };
 
 // Fallback: render as bar chart showing average prices
 function renderDamageBarChart(filteredGroups) {
-  console.log("Rendering fallback bar chart");
+  const msg = document.getElementById("boxPlotMessage");
+  if (msg) msg.style.display = "none";
   const labels = Object.keys(filteredGroups).sort();
   const averages = labels.map((damage) => {
     const prices = filteredGroups[damage];
@@ -654,7 +668,9 @@ function renderDamageBarChart(filteredGroups) {
     boxPlotChart = null;
   }
 
-  const ctx = document.getElementById("boxPlotChart").getContext("2d");
+  const canvas = document.getElementById("boxPlotChart");
+  if (canvas) canvas.style.display = "";
+  const ctx = canvas.getContext("2d");
   boxPlotChart = new Chart(ctx, {
     type: "bar",
     data: {
@@ -732,7 +748,9 @@ window.renderAvgPriceLineChart = function (carList) {
     // Add event listener if not already added
     if (!selector.hasAttribute("data-listener")) {
       selector.addEventListener("change", () => {
-        window.renderAvgPriceLineChart(carList);
+        // Re-render using the latest filtered dataset (not the first one)
+        const latest = window.__datasetForGraphs || carList || [];
+        window.renderAvgPriceLineChart(latest);
       });
       selector.setAttribute("data-listener", "true");
     }

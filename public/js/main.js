@@ -402,6 +402,12 @@ function updateFilteredData() {
   yearMap = groupByYear(filtered);
   renderChart(yearMap);
 
+  const yearSubset =
+    selectedYear && yearMap[selectedYear] ? yearMap[selectedYear] : null;
+  const datasetForGraphs = yearSubset || filtered;
+  // Expose latest dataset globally for graphs (avoids stale closures)
+  window.__datasetForGraphs = datasetForGraphs;
+
   if (selectedYear && yearMap[selectedYear]) {
     showCarList(selectedYear, yearMap[selectedYear]);
   } else if (selectedYear && !yearMap[selectedYear]) {
@@ -413,10 +419,10 @@ function updateFilteredData() {
     showCarList(null, filtered);
   }
   if (window.renderScatterChart) {
-    window.renderScatterChart(applyFilters(carData));
+    window.renderScatterChart(datasetForGraphs);
   }
   if (window.renderPriceHistogram) {
-    window.renderPriceHistogram(applyFilters(carData));
+    window.renderPriceHistogram(datasetForGraphs);
     const priceOutliersToggle = document.getElementById(
       "price-hist-ignore-outliers",
     );
@@ -425,13 +431,15 @@ function updateFilteredData() {
       !priceOutliersToggle.hasAttribute("data-listener")
     ) {
       priceOutliersToggle.addEventListener("change", () => {
-        window.renderPriceHistogram(applyFilters(carData));
+        window.renderPriceHistogram(
+          window.__datasetForGraphs || datasetForGraphs,
+        );
       });
       priceOutliersToggle.setAttribute("data-listener", "true");
     }
   }
   if (window.renderMileageHistogram) {
-    window.renderMileageHistogram(applyFilters(carData));
+    window.renderMileageHistogram(datasetForGraphs);
     const mileageOutliersToggle = document.getElementById(
       "mileage-hist-ignore-outliers",
     );
@@ -440,16 +448,18 @@ function updateFilteredData() {
       !mileageOutliersToggle.hasAttribute("data-listener")
     ) {
       mileageOutliersToggle.addEventListener("change", () => {
-        window.renderMileageHistogram(applyFilters(carData));
+        window.renderMileageHistogram(
+          window.__datasetForGraphs || datasetForGraphs,
+        );
       });
       mileageOutliersToggle.setAttribute("data-listener", "true");
     }
   }
   if (window.renderPriceBoxPlot) {
-    window.renderPriceBoxPlot(filtered);
+    window.renderPriceBoxPlot(datasetForGraphs);
   }
   if (window.renderAvgPriceLineChart) {
-    window.renderAvgPriceLineChart(filtered);
+    window.renderAvgPriceLineChart(datasetForGraphs);
   }
 }
 
@@ -554,8 +564,7 @@ function renderSortPanel() {
     showAllBtn.onclick = function () {
       selectedYear = null;
       updateBarColors();
-      const filtered = applyFilters(carData);
-      showCarList(null, filtered);
+      updateFilteredData();
     };
     sortPanel.appendChild(showAllBtn);
   }
