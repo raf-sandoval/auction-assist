@@ -320,9 +320,17 @@ function renderFilterPanel() {
     btn.onmouseleave = () =>
       (btn.style.background = isActive ? "#34d399" : "#27272a");
     btn.onclick = () => {
+      // Save current scroll position
+      const currentScrollY = window.scrollY;
+
       currentFilters.special = isActive ? null : key; // toggle
       renderFilterPanel();
       updateFilteredData();
+
+      // Restore scroll position after DOM updates
+      requestAnimationFrame(() => {
+        window.scrollTo(0, currentScrollY);
+      });
     };
     return btn;
   };
@@ -398,6 +406,9 @@ function applyFilters(data) {
 }
 
 function updateFilteredData() {
+  // Save current scroll position
+  const currentScrollY = window.scrollY;
+
   const filtered = applyFilters(carData);
   yearMap = groupByYear(filtered);
   renderChart(yearMap);
@@ -418,6 +429,11 @@ function updateFilteredData() {
     // Show all years by default
     showCarList(null, filtered);
   }
+
+  // Restore scroll position after DOM updates
+  requestAnimationFrame(() => {
+    window.scrollTo(0, currentScrollY);
+  });
   if (window.renderScatterChart) {
     window.renderScatterChart(datasetForGraphs);
   }
@@ -575,6 +591,9 @@ function renderSortPanel() {
   const applyBtn = document.createElement("button");
   applyBtn.textContent = "Apply";
   applyBtn.onclick = function () {
+    // Save current scroll position
+    const currentScrollY = window.scrollY;
+
     currentSort.by = sortBySelect.value;
     currentSort.order = orderSelect.value;
     if (selectedYear) {
@@ -584,6 +603,11 @@ function renderSortPanel() {
       showCarList(null, filtered);
     }
     // Toolbar will automatically update via showCarList
+
+    // Restore scroll position after DOM updates
+    requestAnimationFrame(() => {
+      window.scrollTo(0, currentScrollY);
+    });
   };
 
   sortPanel.appendChild(sortByLabel);
