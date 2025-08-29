@@ -19,8 +19,8 @@ let currentCarList = [];
 
 // Bar colors (teal palette)
 const defaultBarColor = "#34d399"; // primary teal
-const selectedBarColor = "#10b981"; // selected/active teal
-const hoverBarColor = "#6ee7b7"; // hover teal
+const selectedBarColor = "#f97316"; // distinctive orange
+const hoverBarColor = "#374151"; // hover teal
 
 const NON_RECOMMENDED_DAMAGES = [
   "Burn",
@@ -320,9 +320,17 @@ function renderFilterPanel() {
     btn.onmouseleave = () =>
       (btn.style.background = isActive ? "#34d399" : "#27272a");
     btn.onclick = () => {
+      // Save current scroll position
+      const currentScrollY = window.scrollY;
+
       currentFilters.special = isActive ? null : key; // toggle
       renderFilterPanel();
       updateFilteredData();
+
+      // Restore scroll position after DOM updates
+      requestAnimationFrame(() => {
+        window.scrollTo(0, currentScrollY);
+      });
     };
     return btn;
   };
@@ -398,9 +406,18 @@ function applyFilters(data) {
 }
 
 function updateFilteredData() {
+  // Save current scroll position
+  const currentScrollY = window.scrollY;
+
   const filtered = applyFilters(carData);
   yearMap = groupByYear(filtered);
   renderChart(yearMap);
+
+  const yearSubset =
+    selectedYear && yearMap[selectedYear] ? yearMap[selectedYear] : null;
+  const datasetForGraphs = yearSubset || filtered;
+  // Expose latest dataset globally for graphs (avoids stale closures)
+  window.__datasetForGraphs = datasetForGraphs;
 
   if (selectedYear && yearMap[selectedYear]) {
     showCarList(selectedYear, yearMap[selectedYear]);
@@ -412,11 +429,16 @@ function updateFilteredData() {
     // Show all years by default
     showCarList(null, filtered);
   }
+
+  // Restore scroll position after DOM updates
+  requestAnimationFrame(() => {
+    window.scrollTo(0, currentScrollY);
+  });
   if (window.renderScatterChart) {
-    window.renderScatterChart(applyFilters(carData));
+    window.renderScatterChart(datasetForGraphs);
   }
   if (window.renderPriceHistogram) {
-    window.renderPriceHistogram(applyFilters(carData));
+    window.renderPriceHistogram(datasetForGraphs);
     const priceOutliersToggle = document.getElementById(
       "price-hist-ignore-outliers",
     );
@@ -425,13 +447,15 @@ function updateFilteredData() {
       !priceOutliersToggle.hasAttribute("data-listener")
     ) {
       priceOutliersToggle.addEventListener("change", () => {
-        window.renderPriceHistogram(applyFilters(carData));
+        window.renderPriceHistogram(
+          window.__datasetForGraphs || datasetForGraphs,
+        );
       });
       priceOutliersToggle.setAttribute("data-listener", "true");
     }
   }
   if (window.renderMileageHistogram) {
-    window.renderMileageHistogram(applyFilters(carData));
+    window.renderMileageHistogram(datasetForGraphs);
     const mileageOutliersToggle = document.getElementById(
       "mileage-hist-ignore-outliers",
     );
@@ -440,16 +464,18 @@ function updateFilteredData() {
       !mileageOutliersToggle.hasAttribute("data-listener")
     ) {
       mileageOutliersToggle.addEventListener("change", () => {
-        window.renderMileageHistogram(applyFilters(carData));
+        window.renderMileageHistogram(
+          window.__datasetForGraphs || datasetForGraphs,
+        );
       });
       mileageOutliersToggle.setAttribute("data-listener", "true");
     }
   }
   if (window.renderPriceBoxPlot) {
-    window.renderPriceBoxPlot(filtered);
+    window.renderPriceBoxPlot(datasetForGraphs);
   }
   if (window.renderAvgPriceLineChart) {
-    window.renderAvgPriceLineChart(filtered);
+    window.renderAvgPriceLineChart(datasetForGraphs);
   }
 }
 
@@ -503,12 +529,55 @@ function renderChart(yearMapInput) {
       },
       onClick: (evt, elements) => {
         if (elements.length > 0) {
+          // Save current scroll position
+          const currentScrollY = window.scrollY;
+
           const idx = elements[0].index;
           const years = chart.data.labels;
           const year = years[idx];
-          selectedYear = year;
+          // selectedYear = year;
+          selectedYear = selectedYear === year ? null : year;
           updateBarColors();
-          showCarList(year, yearMap[year]);
+
+          // Update the car list and graphs without re-rendering the chart
+          const filtered = applyFilters(carData);
+          const yearSubset =
+            selectedYear && yearMap[selectedYear]
+              ? yearMap[selectedYear]
+              : null;
+          const datasetForGraphs = yearSubset || filtered;
+          window.__datasetForGraphs = datasetForGraphs;
+
+          if (selectedYear && yearMap[selectedYear]) {
+            showCarList(selectedYear, yearMap[selectedYear]);
+          } else if (selectedYear && !yearMap[selectedYear]) {
+            selectedYear = null;
+            showCarList(null, filtered);
+          } else {
+            showCarList(null, filtered);
+          }
+
+          // Update graphs
+          if (window.renderScatterChart) {
+            window.renderScatterChart(datasetForGraphs);
+          }
+          if (window.renderPriceHistogram) {
+            window.renderPriceHistogram(datasetForGraphs);
+          }
+          if (window.renderMileageHistogram) {
+            window.renderMileageHistogram(datasetForGraphs);
+          }
+          if (window.renderPriceBoxPlot) {
+            window.renderPriceBoxPlot(datasetForGraphs);
+          }
+          if (window.renderAvgPriceLineChart) {
+            window.renderAvgPriceLineChart(datasetForGraphs);
+          }
+
+          // Restore scroll position after DOM updates
+          requestAnimationFrame(() => {
+            window.scrollTo(0, currentScrollY);
+          });
         }
       },
     },
@@ -533,31 +602,6 @@ function renderSortPanel() {
   if (!currentCarList.length) {
     sortPanel.style.display = "none";
     return;
-  }
-
-  // Show All Years button (only show when a specific year is selected)
-  if (selectedYear) {
-    const showAllBtn = document.createElement("button");
-    showAllBtn.textContent = "Show All Years";
-    showAllBtn.style.background = "#6366f1";
-    showAllBtn.style.color = "#fff";
-    showAllBtn.style.border = "none";
-    showAllBtn.style.borderRadius = "6px";
-    showAllBtn.style.padding = "7px 18px";
-    showAllBtn.style.fontSize = "1rem";
-    showAllBtn.style.fontWeight = "600";
-    showAllBtn.style.cursor = "pointer";
-    showAllBtn.style.transition = "background 0.15s";
-    showAllBtn.style.marginRight = "1rem";
-    showAllBtn.onmouseover = () => (showAllBtn.style.background = "#4f46e5");
-    showAllBtn.onmouseout = () => (showAllBtn.style.background = "#6366f1");
-    showAllBtn.onclick = function () {
-      selectedYear = null;
-      updateBarColors();
-      const filtered = applyFilters(carData);
-      showCarList(null, filtered);
-    };
-    sortPanel.appendChild(showAllBtn);
   }
 
   // Sort by dropdown
@@ -589,6 +633,9 @@ function renderSortPanel() {
   const applyBtn = document.createElement("button");
   applyBtn.textContent = "Apply";
   applyBtn.onclick = function () {
+    // Save current scroll position
+    const currentScrollY = window.scrollY;
+
     currentSort.by = sortBySelect.value;
     currentSort.order = orderSelect.value;
     if (selectedYear) {
@@ -598,6 +645,11 @@ function renderSortPanel() {
       showCarList(null, filtered);
     }
     // Toolbar will automatically update via showCarList
+
+    // Restore scroll position after DOM updates
+    requestAnimationFrame(() => {
+      window.scrollTo(0, currentScrollY);
+    });
   };
 
   sortPanel.appendChild(sortByLabel);
