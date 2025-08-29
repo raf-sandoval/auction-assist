@@ -19,8 +19,8 @@ let currentCarList = [];
 
 // Bar colors (teal palette)
 const defaultBarColor = "#34d399"; // primary teal
-const selectedBarColor = "#10b981"; // selected/active teal
-const hoverBarColor = "#6ee7b7"; // hover teal
+const selectedBarColor = "#f97316"; // distinctive orange
+const hoverBarColor = "#374151"; // hover teal
 
 const NON_RECOMMENDED_DAMAGES = [
   "Burn",
@@ -529,13 +529,55 @@ function renderChart(yearMapInput) {
       },
       onClick: (evt, elements) => {
         if (elements.length > 0) {
+          // Save current scroll position
+          const currentScrollY = window.scrollY;
+
           const idx = elements[0].index;
           const years = chart.data.labels;
           const year = years[idx];
           // selectedYear = year;
           selectedYear = selectedYear === year ? null : year;
           updateBarColors();
-          updateFilteredData();
+
+          // Update the car list and graphs without re-rendering the chart
+          const filtered = applyFilters(carData);
+          const yearSubset =
+            selectedYear && yearMap[selectedYear]
+              ? yearMap[selectedYear]
+              : null;
+          const datasetForGraphs = yearSubset || filtered;
+          window.__datasetForGraphs = datasetForGraphs;
+
+          if (selectedYear && yearMap[selectedYear]) {
+            showCarList(selectedYear, yearMap[selectedYear]);
+          } else if (selectedYear && !yearMap[selectedYear]) {
+            selectedYear = null;
+            showCarList(null, filtered);
+          } else {
+            showCarList(null, filtered);
+          }
+
+          // Update graphs
+          if (window.renderScatterChart) {
+            window.renderScatterChart(datasetForGraphs);
+          }
+          if (window.renderPriceHistogram) {
+            window.renderPriceHistogram(datasetForGraphs);
+          }
+          if (window.renderMileageHistogram) {
+            window.renderMileageHistogram(datasetForGraphs);
+          }
+          if (window.renderPriceBoxPlot) {
+            window.renderPriceBoxPlot(datasetForGraphs);
+          }
+          if (window.renderAvgPriceLineChart) {
+            window.renderAvgPriceLineChart(datasetForGraphs);
+          }
+
+          // Restore scroll position after DOM updates
+          requestAnimationFrame(() => {
+            window.scrollTo(0, currentScrollY);
+          });
         }
       },
     },
