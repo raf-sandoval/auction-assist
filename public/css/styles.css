@@ -961,3 +961,148 @@ input[type="file"] {
     padding: 8px 10px;
     font-size: 1rem;
 }
+
+/* --- Print button (top-right of Graphs header) --- */
+.print-btn {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #34d399;
+    color: #18181b;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.print-btn:hover {
+    background: #10b981;
+    color: #fff;
+}
+.print-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* --- Car selection chip on each card --- */
+.report-chip {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #27272a;
+    color: #e4e4e7;
+    border: 1px solid #3f3f46;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    user-select: none;
+}
+.report-chip.selected {
+    background: #34d399;
+    color: #18181b;
+    border-color: #34d399;
+    font-weight: 800;
+}
+.car-item {
+    position: relative; /* to anchor chip */
+}
+
+/* --- Printable report container --- */
+#print-root {
+    display: none;
+    background: #fff;
+    color: #000;
+    font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        Segoe UI,
+        Roboto,
+        Ubuntu,
+        Cantarell,
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+}
+.print-page {
+    page-break-after: always;
+    padding: 24px;
+}
+.print-h1 {
+    font-size: 20px;
+    font-weight: 800;
+    margin: 0 0 8px 0;
+}
+.print-subtle {
+    color: #555;
+    font-size: 12px;
+}
+.print-section-title {
+    font-weight: 800;
+    margin: 16px 0 8px 0;
+}
+.print-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+}
+
+/* Chart images inside report */
+.print-chart {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+/* Receipt table (white print) */
+.print-receipt {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+}
+.print-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+.print-table col.col-label {
+    width: 48%;
+}
+.print-table col.col-usd,
+.print-table col.col-lps {
+    width: 26%;
+}
+.print-table th,
+.print-table td {
+    padding: 6px 6px;
+    border-bottom: 1px solid #eee;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.print-table td:first-child,
+.print-table th:first-child {
+    text-align: left;
+}
+.print-total {
+    font-weight: 800;
+}
+
+/* --- Print rules --- */
+@media print {
+    html,
+    body {
+        background: #fff !important;
+    }
+    body > *:not(#print-root) {
+        display: none !important;
+    }
+    #print-root {
+        display: block !important;
+
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}

@@ -1105,6 +1105,12 @@ showCarList = function (year, cars) {
   } else {
     hideDynamicToolbar();
   }
+  if (
+    window.PrintReport &&
+    typeof window.PrintReport.onListRendered === "function"
+  ) {
+    window.PrintReport.onListRendered(cars || []);
+  }
   // Make the dataset accessible globally to the estimator module
   window.carData = carData;
 };
