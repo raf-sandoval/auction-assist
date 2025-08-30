@@ -1106,3 +1106,145 @@ input[type="file"] {
         print-color-adjust: exact;
     }
 }
+
+/* Floating Print FAB */
+.fab-print {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 1200;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #34d399;
+    color: #18181b;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    border: none;
+    transition:
+        transform 0.1s,
+        background 0.15s;
+}
+.fab-print:hover {
+    background: #10b981;
+    color: #fff;
+}
+.fab-print:active {
+    transform: translateY(1px);
+}
+.fab-print svg {
+    width: 24px;
+    height: 24px;
+}
+.fab-print-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #ef4444;
+    color: #fff;
+    font-weight: 800;
+    font-size: 11px;
+    border-radius: 999px;
+    padding: 2px 6px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+@media print {
+    .fab-print {
+        display: none !important;
+    }
+}
+
+/* Compact printable layout */
+#print-root {
+    display: none;
+    background: #fff;
+    color: #000;
+}
+.print-page {
+    page-break-after: always;
+    padding: 16px;
+    font-size: 12.5px;
+}
+.print-h1 {
+    font-size: 18px;
+    font-weight: 800;
+    margin: 0 0 6px 0;
+}
+.print-subtle {
+    color: #555;
+    font-size: 11px;
+}
+.print-section-title {
+    font-weight: 800;
+    margin: 12px 0 6px 0;
+    font-size: 13px;
+}
+.print-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.print-chart {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    max-height: 220px;
+    object-fit: contain;
+}
+
+.print-receipt {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 8px;
+}
+.print-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+.print-table col.col-label {
+    width: 48%;
+}
+.print-table col.col-usd,
+.print-table col.col-lps {
+    width: 26%;
+}
+.print-table th,
+.print-table td {
+    padding: 4px 6px;
+    border-bottom: 1px solid #eee;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.print-table td:first-child,
+.print-table th:first-child {
+    text-align: left;
+}
+.print-total {
+    font-weight: 800;
+}
+.print-car-img {
+    max-height: 160px;
+    width: auto;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+@media print {
+    html,
+    body {
+        background: #fff !important;
+    }
+    body > *:not(#print-root) {
+        display: none !important;
+    }
+    #print-root {
+        display: block !important;
+    }
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
