@@ -327,61 +327,87 @@
     return parts.join(" · ") || "Todos";
   }
 
-  // Robust snapshot for hidden charts
+  // Robust snapshots: rebuild each chart onto an off-screen canvas
   async function snapshotCharts() {
     return {
-      bar: snapshotCanvasById("barChart", window.chart),
-      priceHist: snapshotCanvasById(
-        "priceHistogram",
-        window.priceHistogramChart,
-      ),
-      mileageHist: snapshotCanvasById(
-        "mileageHistogram",
-        window.mileageHistogramChart,
-      ),
-      boxPlot: snapshotCanvasById("boxPlotChart", window.boxPlotChart),
-      avgLine: snapshotCanvasById("avgPriceLineChart", window.avgLineChart),
+      bar: snapshotFromInstance(window.chart, 820, 260),
+      priceHist: snapshotFromInstance(window.priceHistogramChart, 820, 260),
+      mileageHist: snapshotFromInstance(window.mileageHistogramChart, 820, 260),
+      boxPlot: snapshotFromInstance(window.boxPlotChart, 820, 260),
+      avgLine: snapshotFromInstance(window.avgLineChart, 820, 260),
     };
   }
 
-  function snapshotCanvasById(id, instance) {
-    const canvas = document.getElementById(id);
-    if (!canvas || !instance) return null;
-    // If canvas has no size (hidden tab), draw offscreen
-    const W = 800,
-      H = 400;
-    const prev = {
-      style: canvas.getAttribute("style"),
-      width: canvas.width,
-      height: canvas.height,
-    };
-    const wasHidden = canvas.offsetWidth === 0 || canvas.offsetHeight === 0;
+  function snapshotFromInstance(instance, width = 820, height = 260) {
+    if (!instance) return null;
 
-    try {
-      if (wasHidden) {
-        canvas.style.cssText =
-          (prev.style || "") +
-          ";position:fixed;left:-99999px;top:-99999px;display:block;";
-      }
-      canvas.width = W;
-      canvas.height = H;
-      try {
-        if (typeof instance.resize === "function") instance.resize(W, H);
-        if (typeof instance.update === "function") instance.update("none");
-      } catch {}
-      return canvas.toDataURL("image/png");
-    } catch {
-      return null;
-    } finally {
-      // restore
-      canvas.width = prev.width;
-      canvas.height = prev.height;
-      if (prev.style == null) canvas.removeAttribute("style");
-      else canvas.setAttribute("style", prev.style);
-      try {
-        if (typeof instance.resize === "function") instance.resize();
-      } catch {}
+    // Clone chart data shallowly (enough for static rendering)
+    const data = cloneChartData(instance.data);
+    if (
+      !data ||
+      !data.datasets ||
+      data.datasets.every((d) => !d.data || d.data.length === 0)
+    ) {
+      return null; // nothing to draw
     }
+
+    // Create an off-screen canvas
+    const tmp = document.createElement("canvas");
+    tmp.width = width;
+    tmp.height = height;
+    tmp.style.cssText =
+      "position:fixed;left:-99999px;top:-99999px;display:block;";
+    document.body.appendChild(tmp);
+
+    // Build a minimal config that doesn't depend on container size
+    const type = instance.config?.type || "bar";
+    const options = {
+      responsive: false,
+      animation: false,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: !!instance.options?.plugins?.legend?.display },
+      },
+      // Keep simple scales; Chart.js will auto-generate ticks without callbacks
+      scales: instance.config?.options?.scales ? {} : undefined,
+    };
+
+    let url = null;
+    try {
+      const chart = new Chart(tmp.getContext("2d"), { type, data, options });
+      chart.update();
+      url = tmp.toDataURL("image/png");
+      chart.destroy();
+    } catch (_) {
+      url = null;
+    } finally {
+      document.body.removeChild(tmp);
+    }
+    return url;
+  }
+
+  function cloneChartData(src) {
+    if (!src) return null;
+    return {
+      labels: Array.isArray(src.labels) ? [...src.labels] : [],
+      datasets: Array.isArray(src.datasets)
+        ? src.datasets.map((ds) => ({
+            label: ds.label,
+            data: Array.isArray(ds.data)
+              ? ds.data.map((d) =>
+                  d && typeof d === "object" && ("x" in d || "y" in d)
+                    ? { x: d.x, y: d.y }
+                    : d,
+                )
+              : [],
+            backgroundColor: ds.backgroundColor,
+            borderColor: ds.borderColor,
+            borderWidth: ds.borderWidth,
+            hoverBackgroundColor: ds.hoverBackgroundColor,
+            outlierColor: ds.outlierColor, // boxplot plugin
+          }))
+        : [],
+    };
   }
 
   function imgOrPlaceholder(dataUrl, title) {
@@ -505,7 +531,7 @@
           <tbody>
             <tr><td>Transferencia internacional</td><td>${fmtUSD(usd.transferenciaInternacional)}</td><td>${fmtLps(lps.transferenciaInternacional)}</td></tr>
             <tr><td>Comisión</td><td>${fmtUSD(usd.comision)}</td><td>${fmtLps(lps.comision)}</td></tr>
-            <tr class="print-total"><td>TOTAL FUERA DE ADUANA</td><td>${fmtUSD(pick?.totals?.usd?.otherFees)}</td><td>${fmtLps(pick?.totals?.lps?.otherFees)}</td></tr>
+            <tr class="print-total"><td>TOTAL FUERA DE ADUANA</td><td>${fmtUSD(pick?.totals?.usd?.total)}</td><td>${fmtLps(pick?.totals?.lps?.total)}</td></tr>
           </tbody>
         </table>
       </div>
