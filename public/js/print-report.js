@@ -115,6 +115,7 @@
     // Capture current visibility state and ensure all graphs are visible before taking snapshots
     const originalVisibilityState = captureGraphsVisibilityState();
     await ensureGraphsVisible();
+    await ensureChartsReady(); // make sure charts exist even if user never opened graphs
 
     const charts = await snapshotCharts();
 
@@ -131,7 +132,6 @@
       <div class="print-section-title">Gráficos</div>
       <div class="print-two-col">
         ${imgOrPlaceholder(charts.bar, "Precios promedio por año")}
-        ${imgOrPlaceholder(charts.scatter, "Precios vs Fecha")}
       </div>
       <div class="print-two-col" style="margin-top:10px">
         ${imgOrPlaceholder(charts.priceHist, "Histograma de precios")}
@@ -189,6 +189,66 @@
           .catch(() => {}),
       ),
     );
+  }
+
+  // Ensure all chart instances exist and have data before snapshotting
+  async function ensureChartsReady() {
+    try {
+      const filtered =
+        typeof applyFilters === "function" && Array.isArray(window.carData)
+          ? applyFilters(window.carData)
+          : window.carData || [];
+      const datasetForGraphs =
+        window.__datasetForGraphs ||
+        (selectedYear && yearMap && yearMap[selectedYear]
+          ? yearMap[selectedYear]
+          : filtered);
+
+      // Bar (yearly) chart
+      const needBar =
+        !window.chart ||
+        !window.chart.data ||
+        !window.chart.data.datasets ||
+        window.chart.data.datasets.length === 0;
+      if (
+        needBar &&
+        typeof groupByYear === "function" &&
+        typeof renderChart === "function"
+      ) {
+        const ym = groupByYear(filtered);
+        renderChart(ym);
+      }
+
+      // Other graphs
+      const ensure = (inst, fn) => {
+        if (
+          !inst ||
+          !inst.data ||
+          !inst.data.datasets ||
+          inst.data.datasets.length === 0
+        ) {
+          try {
+            fn(datasetForGraphs);
+          } catch (e) {
+            console.warn("ensureChartsReady failed for fn:", e);
+          }
+        }
+      };
+      if (typeof window.renderScatterChart === "function")
+        ensure(window.scatterChart, window.renderScatterChart);
+      if (typeof window.renderPriceHistogram === "function")
+        ensure(window.priceHistogramChart, window.renderPriceHistogram);
+      if (typeof window.renderMileageHistogram === "function")
+        ensure(window.mileageHistogramChart, window.renderMileageHistogram);
+      if (typeof window.renderPriceBoxPlot === "function")
+        ensure(window.boxPlotChart, window.renderPriceBoxPlot);
+      if (typeof window.renderAvgPriceLineChart === "function")
+        ensure(window.avgLineChart, window.renderAvgPriceLineChart);
+    } catch (e) {
+      console.warn("ensureChartsReady error:", e);
+    }
+    // Give Chart.js a brief moment (animations are disabled, so this is quick)
+    await new Promise((r) => setTimeout(r, 200));
   }
 
   // PRINT SETTINGS MODAL — ask for the report title before printing
@@ -622,8 +682,8 @@
     console.log("Chart has data:", !!instance.data);
     console.log("Chart datasets:", instance.data?.datasets?.length || 0);
 
-    // Clone chart data shallowly (enough for static rendering)
-    const data = cloneChartData(instance.data);
+    // Clone and transform chart data for print (darker greens, etc.)
+    const data = cloneChartDataForPrint(instance.data);
     if (
       !data ||
       !data.datasets ||
@@ -772,6 +832,47 @@
           }))
         : [],
     };
+  }
+
+  // Print-specific clone: also darkens "teal" greens for better contrast on white
+  function cloneChartDataForPrint(src) {
+    const d = cloneChartData(src);
+    if (!d || !Array.isArray(d.datasets)) return d;
+    d.datasets = d.datasets.map((ds) => {
+      const cpy = { ...ds };
+      cpy.backgroundColor = transformColorForPrint(cpy.backgroundColor);
+      cpy.borderColor = transformColorForPrint(cpy.borderColor);
+      cpy.hoverBackgroundColor = transformColorForPrint(
+        cpy.hoverBackgroundColor,
+      );
+      cpy.outlierColor = transformColorForPrint(cpy.outlierColor);
+      return cpy;
+    });
+    return d;
+  }
+
+  function transformColorForPrint(val) {
+    if (!val) return val;
+    if (Array.isArray(val)) return val.map(darkenTeal);
+    return darkenTeal(val);
+  }
+
+  // Darken our app's green-only shades when printing snapshots
+  function darkenTeal(color) {
+    if (typeof color !== "string") return color;
+    const hex = color.toLowerCase();
+    // Handle 6-char and 8-char hex (with AA transparency)
+    const alpha = hex.length === 9 ? hex.slice(7) : "";
+    const base = hex.length === 9 ? hex.slice(0, 7) : hex;
+
+    // Known greens in the app: #34d399 (emerald-400), #10b981 (emerald-500)
+    if (base === "#34d399" || base.startsWith("#34d399")) {
+      return "#047857" + alpha; // emerald-800
+    }
+    if (base === "#10b981" || base.startsWith("#10b981")) {
+      return "#065f46" + alpha; // emerald-900-ish
+    }
+    return color; // leave other colors alone
   }
 
   function imgOrPlaceholder(dataUrl, title) {

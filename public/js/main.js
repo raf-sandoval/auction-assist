@@ -506,6 +506,7 @@ function renderChart(yearMapInput) {
     },
     options: {
       responsive: true,
+      animation: false,
       plugins: {
         legend: { display: false },
         tooltip: {
