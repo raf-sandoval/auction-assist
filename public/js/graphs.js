@@ -108,6 +108,7 @@ window.renderScatterChart = function (carList) {
     },
     options: {
       responsive: true,
+      animation: false,
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -343,6 +344,7 @@ window.renderPriceHistogram = function (carList) {
     },
     options: {
       responsive: true,
+      animation: false,
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -447,6 +449,7 @@ window.renderMileageHistogram = function (carList) {
     },
     options: {
       responsive: true,
+      animation: false,
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -598,6 +601,7 @@ window.renderPriceBoxPlot = function (carList) {
       },
       options: {
         responsive: true,
+        animation: false,
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -687,6 +691,7 @@ function renderDamageBarChart(filteredGroups) {
     },
     options: {
       responsive: true,
+      animation: false,
       plugins: {
         legend: { display: false },
         tooltip: {
@@ -858,6 +863,7 @@ window.renderAvgPriceLineChart = function (carList) {
     },
     options: {
       responsive: true,
+      animation: false,
       plugins: {
         legend: {
           display: true,
