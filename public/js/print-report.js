@@ -480,11 +480,6 @@
       <div class="print-section-title">Factor de cambio utilizado: ${res.fx} · <span class="print-subtle">actualizado ${res.asOfFxDate}</span></div>
 
       <div class="print-receipt">
-        <div class="print-section-title">Puerto seleccionado: ${pick?.port || "N/D"}</div>
-        <div class="print-subtle" style="margin-bottom:6px">
-          Grúa: ${fmtUSD(pick?.gruaUSD)} · ${fmtLps(pick?.gruaLps)} — Flete: ${fmtUSD(pick?.fleteUSD)} · ${fmtLps(pick?.fleteLps)}
-        </div>
-
         <div class="print-section-title">Calculo CIF</div>
         <table class="print-table">
           ${colgroup}
