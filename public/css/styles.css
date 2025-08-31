@@ -1066,6 +1066,13 @@ input[type="file"] {
     object-fit: contain;
 }
 
+@media print {
+    /* Slightly increase contrast/saturation for printed charts */
+    .print-chart {
+        filter: brightness(0.95) contrast(1.2) saturate(1.08);
+    }
+}
+
 .print-receipt {
     border: 1px solid #ddd;
     border-radius: 6px;

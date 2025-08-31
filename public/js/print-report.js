@@ -645,7 +645,34 @@
     // Build a minimal config that doesn't depend on container size
     const type = instance.config?.type || "bar";
 
-    // Create type-specific options
+    // Print palette: darker text, darker grid on white background
+    const textColor = "#111827"; // gray-900
+    const gridColor = "#9ca3af"; // gray-400
+    const borderColor = "#111827"; // axes border
+
+    // Ensure a white background in the exported image
+    const bgPlugin = {
+      id: "printBg",
+      beforeDraw(chart) {
+        const { ctx, width: w, height: h } = chart;
+        ctx.save();
+        ctx.globalCompositeOperation = "destination-over";
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, w, h);
+        ctx.restore();
+      },
+    };
+
+    // Helpers to create axes with print colors
+    const axis = (axisType) => ({
+      type: axisType,
+      display: true,
+      grid: { color: gridColor, borderColor },
+      ticks: { color: textColor },
+      title: { color: textColor },
+    });
+
+    // Create type-specific options with a print-friendly palette
     const baseOptions = {
       responsive: false,
       animation: false,
@@ -654,41 +681,23 @@
         legend: {
           display: !!instance.options?.plugins?.legend?.display,
           position: "top",
+          labels: { color: textColor },
         },
       },
     };
 
     // Add type-specific configurations
     if (type === "scatter") {
-      baseOptions.scales = {
-        x: {
-          type: "linear",
-          display: true,
-        },
-        y: {
-          type: "linear",
-          display: true,
-        },
-      };
+      const xType = instance.options?.scales?.x?.type || "time";
+      baseOptions.scales = { x: axis(xType), y: axis("linear") };
     } else if (type === "boxplot") {
-      baseOptions.scales = {
-        x: { display: true },
-        y: { display: true },
-      };
+      baseOptions.scales = { x: axis("category"), y: axis("linear") };
     } else if (type === "line") {
-      baseOptions.scales = {
-        x: {
-          display: true,
-          type: instance.options?.scales?.x?.type || "category",
-        },
-        y: { display: true },
-      };
+      const xType = instance.options?.scales?.x?.type || "time";
+      baseOptions.scales = { x: axis(xType), y: axis("linear") };
     } else {
       // Default for bar charts and others
-      baseOptions.scales = {
-        x: { display: true },
-        y: { display: true },
-      };
+      baseOptions.scales = { x: axis("category"), y: axis("linear") };
     }
 
     return new Promise((resolve) => {
@@ -698,6 +707,7 @@
           type,
           data,
           options: baseOptions,
+          plugins: [bgPlugin],
         });
 
         // Force update and wait for completion
@@ -751,6 +761,14 @@
             borderWidth: ds.borderWidth,
             hoverBackgroundColor: ds.hoverBackgroundColor,
             outlierColor: ds.outlierColor, // boxplot plugin
+            // Preserve a few style details for print fidelity
+            pointStyle: ds.pointStyle,
+            pointRadius: ds.pointRadius,
+            pointHoverRadius: ds.pointHoverRadius,
+            borderDash: ds.borderDash,
+            tension: ds.tension,
+            fill: ds.fill,
+            order: ds.order,
           }))
         : [],
     };
