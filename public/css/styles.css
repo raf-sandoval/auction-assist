@@ -148,6 +148,7 @@ input[type="file"] {
     margin-bottom: 0.5rem;
     width: 100%;
 }
+
 /* Unify range slider accent color */
 #filter-panel input[type="range"] {
     accent-color: #34d399;
@@ -163,6 +164,7 @@ input[type="file"] {
     margin-bottom: 12px;
     background: transparent;
 }
+
 .checkbox-group > label {
     position: absolute;
     top: -10px;
@@ -174,31 +176,37 @@ input[type="file"] {
     font-size: 0.98rem;
     margin: 0 !important;
 }
+
 .checkbox-list {
     display: flex;
     flex-direction: column;
     gap: 6px;
 }
+
 .checkbox-list-damage {
     max-height: 240px;
     overflow: auto;
     padding-right: 4px;
 }
+
 .checkbox-item {
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 4px 0;
 }
+
 .checkbox-item input[type="checkbox"] {
     width: 18px;
     height: 18px;
     accent-color: #34d399;
 }
+
 .checkbox-item label {
     margin: 0 !important;
     color: #e4e4e7 !important;
 }
+
 .checkbox-list.disabled {
     opacity: 0.6;
     pointer-events: none;
@@ -288,6 +296,7 @@ input[type="file"] {
     cursor: pointer;
     min-height: 170px;
     transition: background 0.15s;
+    position: relative; /* to anchor chip */
 }
 
 .car-item:last-child {
@@ -351,49 +360,12 @@ input[type="file"] {
     text-align: center;
 }
 
-@media (max-width: 900px) {
-    .container {
-        padding: 8px;
-    }
-    #filter-panel {
-        padding: 12px 6px 4px 6px;
-    }
-    .filter-content {
-        grid-template-columns: 1fr;
-        gap: 18px;
-    }
-    .car-item {
-        flex-direction: column;
-        align-items: stretch;
-        min-height: 0;
-        gap: 12px;
-    }
-    .car-img {
-        width: 100%;
-        height: 180px;
-        margin-right: 0;
-    }
-    .car-details {
-        grid-template-columns: 1fr;
-        gap: 10px 0;
-    }
-    .filter-dropdowns,
-    .filter-sliders {
-        min-width: 0;
-        width: 100%;
-    }
-    #sort-panel {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-    }
-}
-
 /* Minimal scrollbar for dark mode */
 ::-webkit-scrollbar {
     width: 8px;
     background: #27272a;
 }
+
 ::-webkit-scrollbar-thumb {
     background: #3f3f46;
     border-radius: 8px;
@@ -517,28 +489,6 @@ input[type="file"] {
     text-decoration: underline;
 }
 
-@media (max-width: 900px) {
-    .help-header {
-        padding: 12px 16px;
-    }
-
-    .help-content {
-        padding: 0 16px 16px 16px;
-    }
-
-    .bookmarklet-code {
-        padding: 10px 45px 10px 10px;
-        font-size: 0.8rem;
-    }
-
-    .copy-button {
-        top: 6px;
-        right: 6px;
-        padding: 4px 8px;
-        font-size: 0.8rem;
-    }
-}
-
 .price-toolbar {
     position: fixed;
     left: 0;
@@ -605,22 +555,6 @@ input[type="file"] {
     z-index: 10;
 }
 
-@media (max-width: 600px) {
-    .price-toolbar-card {
-        padding: 10px 8px 8px 8px;
-        min-width: 0;
-        max-width: 100vw;
-        gap: 10px;
-    }
-    .price-toolbar-value {
-        min-width: 40px;
-        font-size: 0.95em;
-    }
-    .price-toolbar-tooltip {
-        font-size: 0.95em;
-        padding: 4px 10px;
-    }
-}
 .graphs-section {
     background: #18181b;
     border-radius: 12px;
@@ -682,15 +616,18 @@ input[type="file"] {
 .graphs-tab-content[style*="display:block"] {
     display: block;
 }
+
 .histogram-controls {
     margin-bottom: 10px;
     color: #a1a1aa;
     user-select: none;
 }
+
 .histogram-controls input[type="checkbox"] {
     accent-color: #34d399;
     margin-right: 6px;
 }
+
 .scatter-legend {
     display: flex;
     flex-wrap: wrap;
@@ -742,13 +679,16 @@ input[type="file"] {
         transform 0.05s;
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.25);
 }
+
 .calc-btn:hover {
     background: #10b981;
     color: #fff;
 }
+
 .calc-btn:active {
     transform: translateY(1px);
 }
+
 .calc-btn svg {
     width: 18px;
     height: 18px;
@@ -762,6 +702,7 @@ input[type="file"] {
     display: none;
     z-index: 2000;
 }
+
 .modal {
     position: fixed;
     inset: 0;
@@ -771,10 +712,12 @@ input[type="file"] {
     align-items: center;
     padding: 24px;
 }
+
 .modal.show,
 .modal-overlay.show {
     display: flex;
 }
+
 .modal-card {
     background: #18181b;
     border: 1px solid #2b2b30;
@@ -783,6 +726,7 @@ input[type="file"] {
     width: 100%;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
 }
+
 .modal-header {
     display: flex;
     align-items: center;
@@ -790,11 +734,13 @@ input[type="file"] {
     padding: 14px 18px;
     border-bottom: 1px solid #2b2b30;
 }
+
 .modal-title {
     font-weight: 700;
     color: #fafafa;
     margin: 0;
 }
+
 .modal-close {
     background: transparent;
     border: 1px solid #3f3f46;
@@ -803,9 +749,13 @@ input[type="file"] {
     padding: 6px 10px;
     cursor: pointer;
 }
+
 .modal-body {
     padding: 16px 18px 18px 18px;
+    max-height: 75vh;
+    overflow: auto;
 }
+
 .modal-section {
     background: #111113;
     border: 1px solid #2b2b30;
@@ -813,26 +763,25 @@ input[type="file"] {
     padding: 12px;
     margin-bottom: 12px;
 }
+
 .modal-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
 }
-@media (max-width: 720px) {
-    .modal-row {
-        grid-template-columns: 1fr;
-    }
-}
+
 .modal-field {
     display: flex;
     flex-direction: column;
     gap: 6px;
 }
+
 .modal-field label {
     color: #a1a1aa;
     font-size: 0.96rem;
     margin: 0;
 }
+
 .modal-field select,
 .modal-field input {
     background: #27272a;
@@ -842,12 +791,14 @@ input[type="file"] {
     padding: 8px 10px;
     font-size: 1rem;
 }
+
 .modal-actions {
     display: flex;
     gap: 10px;
     justify-content: flex-end;
     margin-top: 12px;
 }
+
 .btn-primary {
     background: #34d399;
     color: #18181b;
@@ -857,10 +808,12 @@ input[type="file"] {
     font-weight: 700;
     cursor: pointer;
 }
+
 .btn-primary:hover {
     background: #10b981;
     color: #fff;
 }
+
 .btn-ghost {
     background: transparent;
     border: 1px solid #3f3f46;
@@ -877,20 +830,24 @@ input[type="file"] {
     border-radius: 12px;
     padding: 14px;
 }
+
 .receipt-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
     margin-bottom: 8px;
 }
+
 .receipt-title {
     font-weight: 700;
     color: #fafafa;
 }
+
 .receipt-subtle {
     color: #a1a1aa;
     font-size: 0.92rem;
 }
+
 .receipt-port {
     margin-top: 14px;
     padding: 12px;
@@ -898,52 +855,46 @@ input[type="file"] {
     border: 1px solid #2b2b30;
     background: #0f0f12;
 }
+
 .receipt-port h4 {
     margin: 0 0 8px 0;
     color: #e4e4e7;
     font-weight: 700;
 }
+
 .receipt-table {
     width: 100%;
     border-collapse: collapse;
     margin: 10px 0 14px 0;
+    table-layout: fixed;
 }
+
 .receipt-table th,
 .receipt-table td {
     padding: 8px 6px;
     border-bottom: 1px solid #232329;
     text-align: right;
+    font-variant-numeric: tabular-nums;
 }
+
 .receipt-table th:first-child,
 .receipt-table td:first-child {
     text-align: left;
     color: #e4e4e7;
 }
-.receipt-total {
-    font-weight: 800;
-    color: #fafafa;
-}
 
-/* Keep modal body from growing too tall */
-.modal-body {
-    max-height: 75vh;
-    overflow: auto;
-}
-
-/* Align columns across sections and use tabular numbers */
-.receipt-table {
-    table-layout: fixed;
-}
-.receipt-table th,
-.receipt-table td {
-    font-variant-numeric: tabular-nums;
-}
 .receipt-table col.col-label {
     width: 48%;
 }
+
 .receipt-table col.col-usd,
 .receipt-table col.col-lps {
     width: 26%;
+}
+
+.receipt-total {
+    font-weight: 800;
+    color: #fafafa;
 }
 
 /* Port selector */
@@ -953,6 +904,7 @@ input[type="file"] {
     gap: 10px;
     margin: 8px 0 12px 0;
 }
+
 .port-chooser select {
     background: #27272a;
     color: #e4e4e7;
@@ -960,4 +912,301 @@ input[type="file"] {
     border-radius: 8px;
     padding: 8px 10px;
     font-size: 1rem;
+}
+
+/* --- Print button (top-right of Graphs header) --- */
+.print-btn {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #34d399;
+    color: #18181b;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.print-btn:hover {
+    background: #10b981;
+    color: #fff;
+}
+
+.print-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* --- Car selection chip on each card --- */
+.report-chip {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #27272a;
+    color: #e4e4e7;
+    border: 1px solid #3f3f46;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.report-chip.selected {
+    background: #34d399;
+    color: #18181b;
+    border-color: #34d399;
+    font-weight: 800;
+}
+
+/* Floating Print FAB */
+.fab-print {
+    position: fixed;
+    right: 22px;
+    bottom: 22px;
+    z-index: 1200;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #34d399;
+    color: #18181b;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+    cursor: pointer;
+    border: none;
+    transition:
+        transform 0.1s,
+        background 0.15s;
+}
+
+.fab-print:hover {
+    background: #10b981;
+    color: #fff;
+}
+
+.fab-print:active {
+    transform: translateY(1px);
+}
+
+.fab-print svg {
+    width: 24px;
+    height: 24px;
+}
+
+.fab-print-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background: #ef4444;
+    color: #fff;
+    font-weight: 800;
+    font-size: 11px;
+    border-radius: 999px;
+    padding: 2px 6px;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* --- Printable report container --- */
+#print-root {
+    display: none;
+    background: #fff;
+    color: #000;
+    font-family:
+        Inter,
+        system-ui,
+        -apple-system,
+        Segoe UI,
+        Roboto,
+        Ubuntu,
+        Cantarell,
+        "Helvetica Neue",
+        Arial,
+        sans-serif;
+}
+
+.print-page {
+    page-break-after: always;
+    padding: 16px;
+    font-size: 12.5px;
+}
+
+.print-h1 {
+    font-size: 18px;
+    font-weight: 800;
+    margin: 0 0 6px 0;
+}
+
+.print-subtle {
+    color: #555;
+    font-size: 11px;
+}
+
+.print-section-title {
+    font-weight: 800;
+    margin: 12px 0 6px 0;
+    font-size: 13px;
+}
+
+.print-two-col {
+    display: grid;
+    grid-template-columns: 1fr; /* one graph per row/column */
+    gap: 14px;
+}
+
+.print-chart {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    max-height: 380px; /* taller graphs in print */
+    object-fit: contain;
+}
+
+@media print {
+    /* Slightly increase contrast/saturation for printed charts */
+    .print-chart {
+        filter: brightness(0.95) contrast(1.2) saturate(1.08);
+    }
+}
+
+.print-receipt {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+.print-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.print-table col.col-label {
+    width: 48%;
+}
+
+.print-table col.col-usd,
+.print-table col.col-lps {
+    width: 26%;
+}
+
+.print-table th,
+.print-table td {
+    padding: 4px 6px;
+    border-bottom: 1px solid #eee;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.print-table td:first-child,
+.print-table th:first-child {
+    text-align: left;
+}
+
+.print-total {
+    font-weight: 800;
+}
+
+.print-car-img {
+    max-height: 160px;
+    width: auto;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
+    .container {
+        padding: 8px;
+    }
+    #filter-panel {
+        padding: 12px 6px 4px 6px;
+    }
+    .filter-content {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+    .car-item {
+        flex-direction: column;
+        align-items: stretch;
+        min-height: 0;
+        gap: 12px;
+    }
+    .car-img {
+        width: 100%;
+        height: 180px;
+        margin-right: 0;
+    }
+    .car-details {
+        grid-template-columns: 1fr;
+        gap: 10px 0;
+    }
+    .filter-dropdowns,
+    .filter-sliders {
+        min-width: 0;
+        width: 100%;
+    }
+    #sort-panel {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    .help-header {
+        padding: 12px 16px;
+    }
+    .help-content {
+        padding: 0 16px 16px 16px;
+    }
+    .bookmarklet-code {
+        padding: 10px 45px 10px 10px;
+        font-size: 0.8rem;
+    }
+    .copy-button {
+        top: 6px;
+        right: 6px;
+        padding: 4px 8px;
+        font-size: 0.8rem;
+    }
+    .modal-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .price-toolbar-card {
+        padding: 10px 8px 8px 8px;
+        min-width: 0;
+        max-width: 100vw;
+        gap: 10px;
+    }
+    .price-toolbar-value {
+        min-width: 40px;
+        font-size: 0.95em;
+    }
+    .price-toolbar-tooltip {
+        font-size: 0.95em;
+        padding: 4px 10px;
+    }
+}
+
+@media print {
+    html,
+    body {
+        background: #fff !important;
+    }
+    body > *:not(#print-root) {
+        display: none !important;
+    }
+    #print-root {
+        display: block !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .fab-print {
+        display: none !important;
+    }
 }
