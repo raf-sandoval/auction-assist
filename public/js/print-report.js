@@ -132,7 +132,6 @@
       <div class="print-section-title">Gráficos</div>
       <div class="print-two-col">
         ${imgOrPlaceholder(charts.bar, "Precios promedio por año")}
-        ${imgOrPlaceholder(charts.scatter, "Precios vs Fecha")}
       </div>
       <div class="print-two-col" style="margin-top:10px">
         ${imgOrPlaceholder(charts.priceHist, "Histograma de precios")}
