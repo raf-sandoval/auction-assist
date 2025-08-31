@@ -38,7 +38,7 @@ function getStatusShape(status) {
 }
 
 // --- Scatter chart instance ---
-let scatterChart = null;
+window.scatterChart = null;
 
 // --- Tab logic ---
 window.selectGraphsTab = function (tab) {
@@ -83,14 +83,14 @@ window.renderScatterChart = function (carList) {
     }));
 
   // Destroy previous chart if exists
-  if (scatterChart) {
-    scatterChart.destroy();
-    scatterChart = null;
+  if (window.scatterChart) {
+    window.scatterChart.destroy();
+    window.scatterChart = null;
   }
 
   // Create chart
   const ctx = document.getElementById("scatterChart").getContext("2d");
-  scatterChart = new Chart(ctx, {
+  window.scatterChart = new Chart(ctx, {
     type: "scatter",
     data: {
       datasets: [
@@ -272,7 +272,7 @@ style.innerHTML = `
 document.head.appendChild(style);
 
 // ====== Price Histogram (Tab 2) ======
-let priceHistogramChart = null;
+window.priceHistogramChart = null;
 
 window.renderPriceHistogram = function (carList) {
   // Only show if there is at least one car with price > 0
@@ -287,9 +287,9 @@ window.renderPriceHistogram = function (carList) {
     prices = prices.filter((p) => p <= threshold);
   }
   if (!prices.length) {
-    if (priceHistogramChart) {
-      priceHistogramChart.destroy();
-      priceHistogramChart = null;
+    if (window.priceHistogramChart) {
+      window.priceHistogramChart.destroy();
+      window.priceHistogramChart = null;
     }
     document.getElementById("priceHistogram").style.display = "none";
     return;
@@ -319,14 +319,14 @@ window.renderPriceHistogram = function (carList) {
   }
 
   // Destroy previous chart if exists
-  if (priceHistogramChart) {
-    priceHistogramChart.destroy();
-    priceHistogramChart = null;
+  if (window.priceHistogramChart) {
+    window.priceHistogramChart.destroy();
+    window.priceHistogramChart = null;
   }
 
   // Create chart
   const ctx = document.getElementById("priceHistogram").getContext("2d");
-  priceHistogramChart = new Chart(ctx, {
+  window.priceHistogramChart = new Chart(ctx, {
     type: "bar",
     data: {
       labels: binLabels,
@@ -376,7 +376,7 @@ window.renderPriceHistogram = function (carList) {
 };
 
 // ====== Mileage Histogram (New Tab) ======
-let mileageHistogramChart = null;
+window.mileageHistogramChart = null;
 
 window.renderMileageHistogram = function (carList) {
   let miles = carList
@@ -391,9 +391,9 @@ window.renderMileageHistogram = function (carList) {
   }
 
   if (!miles.length) {
-    if (mileageHistogramChart) {
-      mileageHistogramChart.destroy();
-      mileageHistogramChart = null;
+    if (window.mileageHistogramChart) {
+      window.mileageHistogramChart.destroy();
+      window.mileageHistogramChart = null;
     }
     const canvas = document.getElementById("mileageHistogram");
     if (canvas) canvas.style.display = "none";
@@ -424,13 +424,13 @@ window.renderMileageHistogram = function (carList) {
     binLabels.push(`${from.toLocaleString()}–${to.toLocaleString()} mi`);
   }
 
-  if (mileageHistogramChart) {
-    mileageHistogramChart.destroy();
-    mileageHistogramChart = null;
+  if (window.mileageHistogramChart) {
+    window.mileageHistogramChart.destroy();
+    window.mileageHistogramChart = null;
   }
 
   const ctx = document.getElementById("mileageHistogram").getContext("2d");
-  mileageHistogramChart = new Chart(ctx, {
+  window.mileageHistogramChart = new Chart(ctx, {
     type: "bar",
     data: {
       labels: binLabels,
@@ -494,7 +494,7 @@ function percentile(values, p) {
 }
 
 // ====== Price Box Plot by Damage Type (Tab 3) ======
-let boxPlotChart = null;
+window.boxPlotChart = null;
 
 window.renderPriceBoxPlot = function (carList) {
   // Only show if there is at least one car with price > 0
@@ -503,9 +503,9 @@ window.renderPriceBoxPlot = function (carList) {
   );
 
   if (!validCars.length) {
-    if (boxPlotChart) {
-      boxPlotChart.destroy();
-      boxPlotChart = null;
+    if (window.boxPlotChart) {
+      window.boxPlotChart.destroy();
+      window.boxPlotChart = null;
     }
     const canvas = document.getElementById("boxPlotChart");
     if (canvas) canvas.style.display = "none";
@@ -541,9 +541,9 @@ window.renderPriceBoxPlot = function (carList) {
   );
 
   if (!Object.keys(filteredGroups).length) {
-    if (boxPlotChart) {
-      boxPlotChart.destroy();
-      boxPlotChart = null;
+    if (window.boxPlotChart) {
+      window.boxPlotChart.destroy();
+      window.boxPlotChart = null;
     }
     if (canvas) canvas.style.display = "none";
     let msg = document.getElementById("boxPlotMessage");
@@ -581,16 +581,16 @@ window.renderPriceBoxPlot = function (carList) {
   ];
 
   // Destroy previous chart if exists
-  if (boxPlotChart) {
-    boxPlotChart.destroy();
-    boxPlotChart = null;
+  if (window.boxPlotChart) {
+    window.boxPlotChart.destroy();
+    window.boxPlotChart = null;
   }
 
   // Create chart
   const ctx = document.getElementById("boxPlotChart").getContext("2d");
 
   try {
-    boxPlotChart = new Chart(ctx, {
+    window.boxPlotChart = new Chart(ctx, {
       type: "boxplot",
       data: {
         labels: labels,
@@ -663,15 +663,15 @@ function renderDamageBarChart(filteredGroups) {
     return prices.reduce((sum, p) => sum + p, 0) / prices.length;
   });
 
-  if (boxPlotChart) {
-    boxPlotChart.destroy();
-    boxPlotChart = null;
+  if (window.boxPlotChart) {
+    window.boxPlotChart.destroy();
+    window.boxPlotChart = null;
   }
 
   const canvas = document.getElementById("boxPlotChart");
   if (canvas) canvas.style.display = "";
   const ctx = canvas.getContext("2d");
-  boxPlotChart = new Chart(ctx, {
+  window.boxPlotChart = new Chart(ctx, {
     type: "bar",
     data: {
       labels: labels,
@@ -737,7 +737,7 @@ function getQuartile(sortedArray, quartile) {
 }
 
 // ====== Average Price/Mileage Over Time (Tab 4) ======
-let avgLineChart = null;
+window.avgLineChart = null;
 let currentMetric = "price";
 
 window.renderAvgPriceLineChart = function (carList) {
@@ -774,9 +774,9 @@ window.renderAvgPriceLineChart = function (carList) {
   });
 
   if (!validCars.length) {
-    if (avgLineChart) {
-      avgLineChart.destroy();
-      avgLineChart = null;
+    if (window.avgLineChart) {
+      window.avgLineChart.destroy();
+      window.avgLineChart = null;
     }
     document.getElementById("avgPriceLineChart").style.display = "none";
     return;
@@ -819,14 +819,14 @@ window.renderAvgPriceLineChart = function (carList) {
   };
 
   // Destroy previous chart if exists
-  if (avgLineChart) {
-    avgLineChart.destroy();
-    avgLineChart = null;
+  if (window.avgLineChart) {
+    window.avgLineChart.destroy();
+    window.avgLineChart = null;
   }
 
   // Create chart
   const ctx = document.getElementById("avgPriceLineChart").getContext("2d");
-  avgLineChart = new Chart(ctx, {
+  window.avgLineChart = new Chart(ctx, {
     type: "line",
     data: {
       labels: dates,

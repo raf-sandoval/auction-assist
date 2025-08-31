@@ -1,6 +1,6 @@
 // Global variables
 let carData = [];
-let chart = null;
+window.chart = null;
 let selectedYear = null;
 let yearMap = {};
 let filterOptions = {};
@@ -487,8 +487,8 @@ function renderChart(yearMapInput) {
   const barColors = getBarColors(years, selectedYear);
 
   const ctx = document.getElementById("barChart").getContext("2d");
-  if (chart) chart.destroy();
-  chart = new Chart(ctx, {
+  if (window.chart) window.chart.destroy();
+  window.chart = new Chart(ctx, {
     type: "bar",
     data: {
       labels: years,
@@ -533,7 +533,7 @@ function renderChart(yearMapInput) {
           const currentScrollY = window.scrollY;
 
           const idx = elements[0].index;
-          const years = chart.data.labels;
+          const years = window.chart.data.labels;
           const year = years[idx];
           // selectedYear = year;
           selectedYear = selectedYear === year ? null : year;
@@ -586,12 +586,21 @@ function renderChart(yearMapInput) {
 }
 
 function updateBarColors() {
-  if (!chart) return;
-  const years = chart.data.labels;
-  chart.data.datasets[0].backgroundColor = getBarColors(years, selectedYear);
-  chart.data.datasets[0].borderColor = getBarBorderColors(years, selectedYear);
-  chart.data.datasets[0].borderWidth = getBarBorderWidths(years, selectedYear);
-  chart.update();
+  if (!window.chart) return;
+  const years = window.chart.data.labels;
+  window.chart.data.datasets[0].backgroundColor = getBarColors(
+    years,
+    selectedYear,
+  );
+  window.chart.data.datasets[0].borderColor = getBarBorderColors(
+    years,
+    selectedYear,
+  );
+  window.chart.data.datasets[0].borderWidth = getBarBorderWidths(
+    years,
+    selectedYear,
+  );
+  window.chart.update();
 }
 
 // Sort and list functions

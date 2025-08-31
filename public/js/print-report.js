@@ -104,8 +104,14 @@
     const root = document.getElementById("print-root");
     root.innerHTML = "";
 
-    const filtersSummary = buildFiltersSummary();
+    // Capture current visibility state and ensure all graphs are visible before taking snapshots
+    const originalVisibilityState = captureGraphsVisibilityState();
+    await ensureGraphsVisible();
+
     const charts = await snapshotCharts();
+
+    // Restore original visibility state
+    restoreGraphsVisibilityState(originalVisibilityState);
 
     // Cover page
     const cover = document.createElement("div");
@@ -113,19 +119,18 @@
     cover.innerHTML = `
       <div class="print-h1">Informe de Precios y Costos de Importación</div>
       <div class="print-subtle">${new Date().toLocaleString()}</div>
-      <div class="print-section-title">Filtros actuales</div>
-      <div class="print-subtle">${filtersSummary}</div>
 
       <div class="print-section-title">Gráficos</div>
       <div class="print-two-col">
         ${imgOrPlaceholder(charts.bar, "Precios promedio por año")}
-        ${imgOrPlaceholder(charts.priceHist, "Histograma de precios")}
+        ${imgOrPlaceholder(charts.scatter, "Precios vs Fecha")}
       </div>
       <div class="print-two-col" style="margin-top:10px">
+        ${imgOrPlaceholder(charts.priceHist, "Histograma de precios")}
         ${imgOrPlaceholder(charts.mileageHist, "Histograma de millaje")}
-        ${imgOrPlaceholder(charts.boxPlot, "Precios por tipo de daño")}
       </div>
-      <div style="margin-top:10px">
+      <div class="print-two-col" style="margin-top:10px">
+        ${imgOrPlaceholder(charts.boxPlot, "Precios por tipo de daño")}
         ${imgOrPlaceholder(charts.avgLine, "Promedio a lo largo del tiempo")}
       </div>
     `;
@@ -313,33 +318,232 @@
     }
   }
 
-  function buildFiltersSummary() {
-    const parts = [];
-    if (window.selectedYear) parts.push(`Año: ${window.selectedYear}`);
-    if (window.currentFilters?.special === "clean")
-      parts.push("Solo vehículos 'limpios'");
-    if (window.currentFilters?.special === "nonRecommended")
-      parts.push("Sin daños no recomendados");
-    const min = window.currentFilters?.minPrice ?? null;
-    const max = window.currentFilters?.maxPrice ?? null;
-    if (min !== null && max !== null)
-      parts.push(`Precio: $${min.toLocaleString()}–$${max.toLocaleString()}`);
-    return parts.join(" · ") || "Todos";
+  function captureGraphsVisibilityState() {
+    const graphsSection = document.getElementById("graphs-section");
+    const graphsContent = document.getElementById("graphs-content");
+    const tabContents = document.querySelectorAll(".graphs-tab-content");
+
+    return {
+      graphsSection: graphsSection ? graphsSection.style.display : "",
+      graphsContent: graphsContent ? graphsContent.style.display : "",
+      tabContents: Array.from(tabContents).map(
+        (content) => content.style.display,
+      ),
+    };
+  }
+
+  function restoreGraphsVisibilityState(state) {
+    if (!state) return;
+
+    const graphsSection = document.getElementById("graphs-section");
+    if (graphsSection && state.graphsSection !== undefined) {
+      graphsSection.style.display = state.graphsSection;
+    }
+
+    const graphsContent = document.getElementById("graphs-content");
+    if (graphsContent && state.graphsContent !== undefined) {
+      graphsContent.style.display = state.graphsContent;
+    }
+
+    const tabContents = document.querySelectorAll(".graphs-tab-content");
+    tabContents.forEach((content, index) => {
+      if (state.tabContents && state.tabContents[index] !== undefined) {
+        content.style.display = state.tabContents[index];
+      }
+    });
+  }
+
+  function ensureGraphsVisible() {
+    // Make graphs section visible
+    const graphsSection = document.getElementById("graphs-section");
+    if (graphsSection) {
+      graphsSection.style.display = "";
+    }
+
+    // Make graphs content visible
+    const graphsContent = document.getElementById("graphs-content");
+    if (graphsContent) {
+      graphsContent.style.display = "block";
+    }
+
+    // Make all graph tab contents visible temporarily
+    const tabContents = document.querySelectorAll(".graphs-tab-content");
+    tabContents.forEach((content) => {
+      content.style.display = "block";
+    });
+
+    // Wait a moment for charts to render properly
+    return new Promise((resolve) => setTimeout(resolve, 500));
   }
 
   // Robust snapshots: rebuild each chart onto an off-screen canvas
   async function snapshotCharts() {
-    return {
-      bar: snapshotFromInstance(window.chart, 820, 260),
-      priceHist: snapshotFromInstance(window.priceHistogramChart, 820, 260),
-      mileageHist: snapshotFromInstance(window.mileageHistogramChart, 820, 260),
-      boxPlot: snapshotFromInstance(window.boxPlotChart, 820, 260),
-      avgLine: snapshotFromInstance(window.avgLineChart, 820, 260),
+    console.log("Taking chart snapshots...");
+    console.log("Available charts:", {
+      chart: !!window.chart,
+      scatterChart: !!window.scatterChart,
+      priceHistogramChart: !!window.priceHistogramChart,
+      mileageHistogramChart: !!window.mileageHistogramChart,
+      boxPlotChart: !!window.boxPlotChart,
+      avgLineChart: !!window.avgLineChart,
+    });
+
+    const snapshots = {
+      bar: null,
+      scatter: null,
+      priceHist: null,
+      mileageHist: null,
+      boxPlot: null,
+      avgLine: null,
     };
+
+    // Take snapshots sequentially to avoid conflicts
+    try {
+      if (
+        window.chart &&
+        window.chart.data &&
+        window.chart.data.datasets &&
+        window.chart.data.datasets.length > 0
+      ) {
+        console.log("Snapshotting bar chart...");
+        snapshots.bar = await snapshotFromInstance(window.chart, 820, 260);
+      } else {
+        console.log("Bar chart not available or has no data");
+      }
+    } catch (e) {
+      console.error("Failed to snapshot bar chart:", e);
+    }
+
+    try {
+      if (
+        window.scatterChart &&
+        window.scatterChart.data &&
+        window.scatterChart.data.datasets &&
+        window.scatterChart.data.datasets.length > 0
+      ) {
+        console.log("Snapshotting scatter chart...");
+        snapshots.scatter = await snapshotFromInstance(
+          window.scatterChart,
+          820,
+          260,
+        );
+      } else {
+        console.log("Scatter chart not available or has no data");
+      }
+    } catch (e) {
+      console.error("Failed to snapshot scatter chart:", e);
+    }
+
+    try {
+      if (
+        window.priceHistogramChart &&
+        window.priceHistogramChart.data &&
+        window.priceHistogramChart.data.datasets &&
+        window.priceHistogramChart.data.datasets.length > 0
+      ) {
+        console.log("Snapshotting price histogram...");
+        snapshots.priceHist = await snapshotFromInstance(
+          window.priceHistogramChart,
+          820,
+          260,
+        );
+      } else {
+        console.log("Price histogram chart not available or has no data");
+      }
+    } catch (e) {
+      console.error("Failed to snapshot price histogram:", e);
+    }
+
+    try {
+      if (
+        window.mileageHistogramChart &&
+        window.mileageHistogramChart.data &&
+        window.mileageHistogramChart.data.datasets &&
+        window.mileageHistogramChart.data.datasets.length > 0
+      ) {
+        console.log("Snapshotting mileage histogram...");
+        snapshots.mileageHist = await snapshotFromInstance(
+          window.mileageHistogramChart,
+          820,
+          260,
+        );
+      } else {
+        console.log("Mileage histogram chart not available or has no data");
+      }
+    } catch (e) {
+      console.error("Failed to snapshot mileage histogram:", e);
+    }
+
+    try {
+      if (
+        window.boxPlotChart &&
+        window.boxPlotChart.data &&
+        window.boxPlotChart.data.datasets &&
+        window.boxPlotChart.data.datasets.length > 0
+      ) {
+        console.log("Snapshotting box plot...");
+        snapshots.boxPlot = await snapshotFromInstance(
+          window.boxPlotChart,
+          820,
+          260,
+        );
+      } else {
+        console.log("Box plot chart not available or has no data");
+      }
+    } catch (e) {
+      console.error("Failed to snapshot box plot:", e);
+    }
+
+    try {
+      if (
+        window.avgLineChart &&
+        window.avgLineChart.data &&
+        window.avgLineChart.data.datasets &&
+        window.avgLineChart.data.datasets.length > 0
+      ) {
+        console.log("Snapshotting average line chart...");
+        snapshots.avgLine = await snapshotFromInstance(
+          window.avgLineChart,
+          820,
+          260,
+        );
+      } else {
+        console.log("Average line chart not available or has no data");
+      }
+    } catch (e) {
+      console.error("Failed to snapshot average line chart:", e);
+    }
+
+    console.log("Chart snapshots complete:", {
+      bar: !!snapshots.bar,
+      scatter: !!snapshots.scatter,
+      priceHist: !!snapshots.priceHist,
+      mileageHist: !!snapshots.mileageHist,
+      boxPlot: !!snapshots.boxPlot,
+      avgLine: !!snapshots.avgLine,
+    });
+
+    return snapshots;
   }
 
   function snapshotFromInstance(instance, width = 820, height = 260) {
-    if (!instance) return null;
+    if (!instance) {
+      console.log("No chart instance provided");
+      return null;
+    }
+
+    if (
+      !instance.data ||
+      !instance.data.datasets ||
+      instance.data.datasets.length === 0
+    ) {
+      console.log("Chart instance has no valid data");
+      return null;
+    }
+
+    console.log("Chart instance type:", instance.config?.type);
+    console.log("Chart has data:", !!instance.data);
+    console.log("Chart datasets:", instance.data?.datasets?.length || 0);
 
     // Clone chart data shallowly (enough for static rendering)
     const data = cloneChartData(instance.data);
@@ -348,9 +552,11 @@
       !data.datasets ||
       data.datasets.every((d) => !d.data || d.data.length === 0)
     ) {
+      console.log("No valid chart data to snapshot");
       return null; // nothing to draw
     }
 
+    console.log("Creating temporary canvas for snapshot...");
     // Create an off-screen canvas
     const tmp = document.createElement("canvas");
     tmp.width = width;
@@ -361,29 +567,92 @@
 
     // Build a minimal config that doesn't depend on container size
     const type = instance.config?.type || "bar";
-    const options = {
+
+    // Create type-specific options
+    const baseOptions = {
       responsive: false,
       animation: false,
       maintainAspectRatio: false,
       plugins: {
-        legend: { display: !!instance.options?.plugins?.legend?.display },
+        legend: {
+          display: !!instance.options?.plugins?.legend?.display,
+          position: "top",
+        },
       },
-      // Keep simple scales; Chart.js will auto-generate ticks without callbacks
-      scales: instance.config?.options?.scales ? {} : undefined,
     };
 
-    let url = null;
-    try {
-      const chart = new Chart(tmp.getContext("2d"), { type, data, options });
-      chart.update();
-      url = tmp.toDataURL("image/png");
-      chart.destroy();
-    } catch (_) {
-      url = null;
-    } finally {
-      document.body.removeChild(tmp);
+    // Add type-specific configurations
+    if (type === "scatter") {
+      baseOptions.scales = {
+        x: {
+          type: "linear",
+          display: true,
+        },
+        y: {
+          type: "linear",
+          display: true,
+        },
+      };
+    } else if (type === "boxplot") {
+      baseOptions.scales = {
+        x: { display: true },
+        y: { display: true },
+      };
+    } else if (type === "line") {
+      baseOptions.scales = {
+        x: {
+          display: true,
+          type: instance.options?.scales?.x?.type || "category",
+        },
+        y: { display: true },
+      };
+    } else {
+      // Default for bar charts and others
+      baseOptions.scales = {
+        x: { display: true },
+        y: { display: true },
+      };
     }
-    return url;
+
+    return new Promise((resolve) => {
+      try {
+        console.log("Creating temporary chart for snapshot...");
+        const chart = new Chart(tmp.getContext("2d"), {
+          type,
+          data,
+          options: baseOptions,
+        });
+
+        // Force update and wait for completion
+        chart.update("none");
+
+        // Add a small delay to ensure rendering is complete
+        setTimeout(() => {
+          let url = null;
+          try {
+            url = tmp.toDataURL("image/png");
+            console.log("Snapshot created successfully");
+          } catch (e) {
+            console.error("Error converting canvas to data URL:", e);
+          }
+
+          chart.destroy();
+
+          // Clean up canvas
+          if (document.body.contains(tmp)) {
+            document.body.removeChild(tmp);
+          }
+
+          resolve(url);
+        }, 100);
+      } catch (error) {
+        console.error("Error creating chart snapshot:", error);
+        if (document.body.contains(tmp)) {
+          document.body.removeChild(tmp);
+        }
+        resolve(null);
+      }
+    });
   }
 
   function cloneChartData(src) {
@@ -411,9 +680,18 @@
   }
 
   function imgOrPlaceholder(dataUrl, title) {
+    console.log(`imgOrPlaceholder called for "${title}":`, {
+      hasDataUrl: !!dataUrl,
+      dataUrlLength: dataUrl ? dataUrl.length : 0,
+      dataUrlPrefix: dataUrl ? dataUrl.substring(0, 50) + "..." : "null",
+    });
+
     if (!dataUrl) {
+      console.log(`No data URL for "${title}" - showing placeholder`);
       return `<div><div class="print-subtle">${title}</div><div class="print-subtle">No hay datos</div></div>`;
     }
+
+    console.log(`Using data URL for "${title}"`);
     return `<div><div class="print-subtle">${title}</div><img class="print-chart" src="${dataUrl}" /></div>`;
   }
 
