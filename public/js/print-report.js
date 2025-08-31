@@ -2,6 +2,8 @@
 (function () {
   const API_URL = "/api/estimate";
   const MAX_SELECT = 5;
+  const REPORT_TITLE_DEFAULT = "Informe de Precios y Costos de Importación";
+  let reportTitle = REPORT_TITLE_DEFAULT;
 
   // Natural language → API keys (same as estimate-ui)
   const VEHICLE_OPTIONS = [
@@ -98,7 +100,13 @@
 
   // PRINT FLOW
   async function onPrintClicked() {
-    await runPreflightIfNeeded(); // calculate any missing
+    // Ask for title first
+    const title = await showPrintSettingsModal().catch(() => null);
+    if (!title) return; // cancelled
+    reportTitle = title || REPORT_TITLE_DEFAULT;
+
+    // Then calculate any missing estimates if needed
+    await runPreflightIfNeeded();
 
     ensurePrintRoot();
     const root = document.getElementById("print-root");
@@ -117,7 +125,7 @@
     const cover = document.createElement("div");
     cover.className = "print-page";
     cover.innerHTML = `
-      <div class="print-h1">Informe de Precios y Costos de Importación</div>
+      <div class="print-h1">${reportTitle}</div>
       <div class="print-subtle">${new Date().toLocaleString()}</div>
 
       <div class="print-section-title">Gráficos</div>
@@ -181,6 +189,75 @@
           .catch(() => {}),
       ),
     );
+  }
+
+  // PRINT SETTINGS MODAL — ask for the report title before printing
+  function showPrintSettingsModal() {
+    return new Promise((resolve, reject) => {
+      const overlay = document.createElement("div");
+      overlay.className = "modal-overlay show";
+      const modal = document.createElement("div");
+      modal.className = "modal show";
+
+      const card = document.createElement("div");
+      card.className = "modal-card";
+
+      const header = document.createElement("div");
+      header.className = "modal-header";
+      const titleEl = document.createElement("h3");
+      titleEl.className = "modal-title";
+      titleEl.textContent = "Configuración de impresión";
+      const closeBtn = document.createElement("button");
+      closeBtn.className = "modal-close";
+      closeBtn.textContent = "Cancelar";
+      closeBtn.onclick = () => {
+        cleanup();
+        reject(new Error("cancelled"));
+      };
+      header.appendChild(titleEl);
+      header.appendChild(closeBtn);
+
+      const body = document.createElement("div");
+      body.className = "modal-body";
+      body.innerHTML = `
+        <div class="modal-section">
+          <div class="modal-field">
+            <label for="print-report-title">Título del reporte</label>
+            <input id="print-report-title" type="text"
+              placeholder="Ej. Informe de Precios y Costos de Importación"
+              value="${(reportTitle || REPORT_TITLE_DEFAULT)
+                .toString()
+                .replace(/"/g, "&quot;")}" />
+          </div>
+          <div class="modal-actions">
+            <button class="btn-ghost" id="print-cancel">Cancelar</button>
+            <button class="btn-primary" id="print-continue">Continuar</button>
+          </div>
+        </div>
+      `;
+
+      function cleanup() {
+        document.body.removeChild(overlay);
+        document.body.removeChild(modal);
+      }
+
+      card.appendChild(header);
+      card.appendChild(body);
+      modal.appendChild(card);
+      document.body.appendChild(overlay);
+      document.body.appendChild(modal);
+
+      document.getElementById("print-cancel").onclick = () => {
+        cleanup();
+        reject(new Error("cancelled"));
+      };
+      document.getElementById("print-continue").onclick = () => {
+        const input = document.getElementById("print-report-title");
+        const val = (input?.value || "").trim();
+        cleanup();
+        resolve(val || REPORT_TITLE_DEFAULT);
+      };
+    });
   }
 
   function showPreflightModal() {
@@ -406,7 +483,7 @@
         window.chart.data.datasets.length > 0
       ) {
         console.log("Snapshotting bar chart...");
-        snapshots.bar = await snapshotFromInstance(window.chart, 820, 260);
+        snapshots.bar = await snapshotFromInstance(window.chart, 1100, 380);
       } else {
         console.log("Bar chart not available or has no data");
       }
@@ -424,8 +501,8 @@
         console.log("Snapshotting scatter chart...");
         snapshots.scatter = await snapshotFromInstance(
           window.scatterChart,
-          820,
-          260,
+          1100,
+          380,
         );
       } else {
         console.log("Scatter chart not available or has no data");
@@ -444,8 +521,8 @@
         console.log("Snapshotting price histogram...");
         snapshots.priceHist = await snapshotFromInstance(
           window.priceHistogramChart,
-          820,
-          260,
+          1100,
+          380,
         );
       } else {
         console.log("Price histogram chart not available or has no data");
@@ -464,8 +541,8 @@
         console.log("Snapshotting mileage histogram...");
         snapshots.mileageHist = await snapshotFromInstance(
           window.mileageHistogramChart,
-          820,
-          260,
+          1100,
+          380,
         );
       } else {
         console.log("Mileage histogram chart not available or has no data");
@@ -484,8 +561,8 @@
         console.log("Snapshotting box plot...");
         snapshots.boxPlot = await snapshotFromInstance(
           window.boxPlotChart,
-          820,
-          260,
+          1100,
+          380,
         );
       } else {
         console.log("Box plot chart not available or has no data");
@@ -504,8 +581,8 @@
         console.log("Snapshotting average line chart...");
         snapshots.avgLine = await snapshotFromInstance(
           window.avgLineChart,
-          820,
-          260,
+          1100,
+          380,
         );
       } else {
         console.log("Average line chart not available or has no data");
@@ -526,7 +603,7 @@
     return snapshots;
   }
 
-  function snapshotFromInstance(instance, width = 820, height = 260) {
+  function snapshotFromInstance(instance, width = 1100, height = 380) {
     if (!instance) {
       console.log("No chart instance provided");
       return null;

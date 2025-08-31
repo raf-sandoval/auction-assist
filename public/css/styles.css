@@ -1054,15 +1054,15 @@ input[type="file"] {
 
 .print-two-col {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+    grid-template-columns: 1fr; /* one graph per row/column */
+    gap: 14px;
 }
 
 .print-chart {
     width: 100%;
     border: 1px solid #ddd;
     border-radius: 6px;
-    max-height: 220px;
+    max-height: 380px; /* taller graphs in print */
     object-fit: contain;
 }
 
