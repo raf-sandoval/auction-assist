@@ -179,8 +179,10 @@
     }
     if (!toCalc.length) return;
 
+    // Decide if we need to ask for platform/engine, based on selected cars
+    const { askPlatform, askEngine } = computePreflightNeeds();
     const { vehicleType, platformDefault, engineSize } =
-      await showPreflightModal();
+      await showPreflightModal({ askPlatform, askEngine });
 
     await Promise.allSettled(
       toCalc.map((car) =>
@@ -189,6 +191,26 @@
           .catch(() => {}),
       ),
     );
+  }
+
+  // Determine if any selected cars already have platform/engine info.
+  // We only ask if NONE of the selected cars provides that field (legacy scrape).
+  function computePreflightNeeds() {
+    const carsByVin = Object.create(null);
+    (window.carData || []).forEach((c) => (carsByVin[c.vin] = c));
+    const selectedCars = Array.from(selectedVins || [])
+      .map((v) => carsByVin[v])
+      .filter(Boolean);
+    if (!selectedCars.length) {
+      return { askPlatform: false, askEngine: false };
+    }
+    const hasAnyPlatform = selectedCars.some(
+      (c) => c && c.auction && String(c.auction).trim() !== "",
+    );
+    const hasAnyEngine = selectedCars.some(
+      (c) => typeof c.engine_size === "number" && !Number.isNaN(c.engine_size),
+    );
+    return { askPlatform: !hasAnyPlatform, askEngine: !hasAnyEngine };
   }
 
   // Ensure all chart instances exist and have data before snapshotting
@@ -320,7 +342,8 @@
     });
   }
 
-  function showPreflightModal() {
+  // Overload with options to conditionally ask for platform/engine
+  function showPreflightModal({ askPlatform = true, askEngine = true } = {}) {
     return new Promise((resolve, reject) => {
       const overlay = document.createElement("div");
       overlay.className = "modal-overlay show";
@@ -359,19 +382,35 @@
                 ).join("")}
               </select>
             </div>
-            <div class="modal-field">
+            ${
+              askPlatform
+                ? `<div class="modal-field">
               <label for="pf-platform">Plataforma por defecto</label>
               <select id="pf-platform">
-                <option value="copart" ${preflightDefaults.platformDefault === "copart" ? "selected" : ""}>Copart</option>
-                <option value="iaai" ${preflightDefaults.platformDefault === "iaai" ? "selected" : ""}>IAAI</option>
+                <option value="copart" ${
+                  preflightDefaults.platformDefault === "copart"
+                    ? "selected"
+                    : ""
+                }>Copart</option>
+                <option value="iaai" ${
+                  preflightDefaults.platformDefault === "iaai" ? "selected" : ""
+                }>IAAI</option>
               </select>
-            </div>
+            </div>`
+                : ""
+            }
           </div>
           <div class="modal-row" style="margin-top:8px">
-            <div class="modal-field">
+            ${
+              askEngine
+                ? `<div class="modal-field">
               <label for="pf-engine">Tamaño de motor (L) (opcional)</label>
-              <input id="pf-engine" type="number" step="0.1" min="0.6" placeholder="Ej. 1.5" value="${preflightDefaults.engineSize || ""}" />
-            </div>
+              <input id="pf-engine" type="number" step="0.1" min="0.6" placeholder="Ej. 1.5" value="${
+                preflightDefaults.engineSize || ""
+              }" />
+            </div>`
+                : ""
+            }
           </div>
           <div class="modal-actions">
             <button class="btn-ghost" id="pf-cancel">Cancelar</button>
@@ -397,14 +436,21 @@
       };
       document.getElementById("pf-continue").onclick = () => {
         const vehicleType = document.getElementById("pf-veh-type").value;
-        const platformDefault =
-          document.getElementById("pf-platform").value || "copart";
-        const engineSizeRaw = document.getElementById("pf-engine").value;
-        const engineSize = engineSizeRaw !== "" ? Number(engineSizeRaw) : "";
+        const platformDefault = (() => {
+          if (!askPlatform) return undefined;
+          const el = document.getElementById("pf-platform");
+          return (el && el.value) || "copart";
+        })();
+        const engineSize = (() => {
+          if (!askEngine) return "";
+          const el = document.getElementById("pf-engine");
+          const raw = el ? el.value : "";
+          return raw !== "" ? Number(raw) : "";
+        })();
 
         preflightDefaults.vehicleType = vehicleType;
-        preflightDefaults.platformDefault = platformDefault;
-        preflightDefaults.engineSize = engineSize;
+        if (askPlatform) preflightDefaults.platformDefault = platformDefault;
+        if (askEngine) preflightDefaults.engineSize = engineSize;
 
         cleanup();
         resolve({ vehicleType, platformDefault, engineSize });
@@ -696,8 +742,10 @@
     console.log("Creating temporary canvas for snapshot...");
     // Create an off-screen canvas
     const tmp = document.createElement("canvas");
-    tmp.width = width;
-    tmp.height = height;
+    // Render at higher pixel density for crisp text in PDF
+    const SCALE = 3; // increase for higher resolution (memory vs clarity)
+    tmp.width = Math.floor(width * SCALE);
+    tmp.height = Math.floor(height * SCALE);
     tmp.style.cssText =
       "position:fixed;left:-99999px;top:-99999px;display:block;";
     document.body.appendChild(tmp);
@@ -737,6 +785,7 @@
       responsive: false,
       animation: false,
       maintainAspectRatio: false,
+      devicePixelRatio: 1, // we control resolution via SCALE
       plugins: {
         legend: {
           display: !!instance.options?.plugins?.legend?.display,
