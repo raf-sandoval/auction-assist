@@ -1062,7 +1062,7 @@ input[type="file"] {
     width: 100%;
     border: 1px solid #ddd;
     border-radius: 6px;
-    max-height: 380px; /* taller graphs in print */
+    max-height: 460px; /* larger physical size on the printed page */
     object-fit: contain;
 }
 
