@@ -743,7 +743,7 @@
     // Create an off-screen canvas
     const tmp = document.createElement("canvas");
     // Render at higher pixel density for crisp text in PDF
-    const SCALE = 3; // keep high DPI
+    const SCALE = 2; // keep high DPI
     tmp.width = Math.floor(width * SCALE);
     tmp.height = Math.floor(height * SCALE);
     tmp.style.cssText =
