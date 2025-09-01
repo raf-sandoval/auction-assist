@@ -179,8 +179,10 @@
     }
     if (!toCalc.length) return;
 
+    // Decide if we need to ask for platform/engine, based on selected cars
+    const { askPlatform, askEngine } = computePreflightNeeds();
     const { vehicleType, platformDefault, engineSize } =
-      await showPreflightModal();
+      await showPreflightModal({ askPlatform, askEngine });
 
     await Promise.allSettled(
       toCalc.map((car) =>
@@ -189,6 +191,26 @@
           .catch(() => {}),
       ),
     );
+  }
+
+  // Determine if any selected cars already have platform/engine info.
+  // We only ask if NONE of the selected cars provides that field (legacy scrape).
+  function computePreflightNeeds() {
+    const carsByVin = Object.create(null);
+    (window.carData || []).forEach((c) => (carsByVin[c.vin] = c));
+    const selectedCars = Array.from(selectedVins || [])
+      .map((v) => carsByVin[v])
+      .filter(Boolean);
+    if (!selectedCars.length) {
+      return { askPlatform: false, askEngine: false };
+    }
+    const hasAnyPlatform = selectedCars.some(
+      (c) => c && c.auction && String(c.auction).trim() !== "",
+    );
+    const hasAnyEngine = selectedCars.some(
+      (c) => typeof c.engine_size === "number" && !Number.isNaN(c.engine_size),
+    );
+    return { askPlatform: !hasAnyPlatform, askEngine: !hasAnyEngine };
   }
 
   // Ensure all chart instances exist and have data before snapshotting
@@ -320,7 +342,8 @@
     });
   }
 
-  function showPreflightModal() {
+  // Overload with options to conditionally ask for platform/engine
+  function showPreflightModal({ askPlatform = true, askEngine = true } = {}) {
     return new Promise((resolve, reject) => {
       const overlay = document.createElement("div");
       overlay.className = "modal-overlay show";
@@ -359,19 +382,35 @@
                 ).join("")}
               </select>
             </div>
-            <div class="modal-field">
+            ${
+              askPlatform
+                ? `<div class="modal-field">
               <label for="pf-platform">Plataforma por defecto</label>
               <select id="pf-platform">
-                <option value="copart" ${preflightDefaults.platformDefault === "copart" ? "selected" : ""}>Copart</option>
-                <option value="iaai" ${preflightDefaults.platformDefault === "iaai" ? "selected" : ""}>IAAI</option>
+                <option value="copart" ${
+                  preflightDefaults.platformDefault === "copart"
+                    ? "selected"
+                    : ""
+                }>Copart</option>
+                <option value="iaai" ${
+                  preflightDefaults.platformDefault === "iaai" ? "selected" : ""
+                }>IAAI</option>
               </select>
-            </div>
+            </div>`
+                : ""
+            }
           </div>
           <div class="modal-row" style="margin-top:8px">
-            <div class="modal-field">
+            ${
+              askEngine
+                ? `<div class="modal-field">
               <label for="pf-engine">Tamaño de motor (L) (opcional)</label>
-              <input id="pf-engine" type="number" step="0.1" min="0.6" placeholder="Ej. 1.5" value="${preflightDefaults.engineSize || ""}" />
-            </div>
+              <input id="pf-engine" type="number" step="0.1" min="0.6" placeholder="Ej. 1.5" value="${
+                preflightDefaults.engineSize || ""
+              }" />
+            </div>`
+                : ""
+            }
           </div>
           <div class="modal-actions">
             <button class="btn-ghost" id="pf-cancel">Cancelar</button>
@@ -397,14 +436,21 @@
       };
       document.getElementById("pf-continue").onclick = () => {
         const vehicleType = document.getElementById("pf-veh-type").value;
-        const platformDefault =
-          document.getElementById("pf-platform").value || "copart";
-        const engineSizeRaw = document.getElementById("pf-engine").value;
-        const engineSize = engineSizeRaw !== "" ? Number(engineSizeRaw) : "";
+        const platformDefault = (() => {
+          if (!askPlatform) return undefined;
+          const el = document.getElementById("pf-platform");
+          return (el && el.value) || "copart";
+        })();
+        const engineSize = (() => {
+          if (!askEngine) return "";
+          const el = document.getElementById("pf-engine");
+          const raw = el ? el.value : "";
+          return raw !== "" ? Number(raw) : "";
+        })();
 
         preflightDefaults.vehicleType = vehicleType;
-        preflightDefaults.platformDefault = platformDefault;
-        preflightDefaults.engineSize = engineSize;
+        if (askPlatform) preflightDefaults.platformDefault = platformDefault;
+        if (askEngine) preflightDefaults.engineSize = engineSize;
 
         cleanup();
         resolve({ vehicleType, platformDefault, engineSize });
@@ -696,8 +742,10 @@
     console.log("Creating temporary canvas for snapshot...");
     // Create an off-screen canvas
     const tmp = document.createElement("canvas");
-    tmp.width = width;
-    tmp.height = height;
+    // Render at higher pixel density for crisp text in PDF
+    const SCALE = 2; // keep high DPI
+    tmp.width = Math.floor(width * SCALE);
+    tmp.height = Math.floor(height * SCALE);
     tmp.style.cssText =
       "position:fixed;left:-99999px;top:-99999px;display:block;";
     document.body.appendChild(tmp);
@@ -705,10 +753,16 @@
     // Build a minimal config that doesn't depend on container size
     const type = instance.config?.type || "bar";
 
-    // Print palette: darker text, darker grid on white background
+    // Print palette & font sizing (larger ticks/titles for readability)
     const textColor = "#111827"; // gray-900
     const gridColor = "#9ca3af"; // gray-400
     const borderColor = "#111827"; // axes border
+    const PRINT_FONTS = {
+      base: 14, // default
+      ticks: 16,
+      title: 18,
+      legend: 15,
+    };
 
     // Ensure a white background in the exported image
     const bgPlugin = {
@@ -724,24 +778,38 @@
     };
 
     // Helpers to create axes with print colors
-    const axis = (axisType) => ({
-      type: axisType,
-      display: true,
-      grid: { color: gridColor, borderColor },
-      ticks: { color: textColor },
-      title: { color: textColor },
-    });
+    const axis = (axisType, key) => {
+      const src = instance.options?.scales?.[key]?.ticks || {};
+      return {
+        type: axisType,
+        display: true,
+        grid: { color: gridColor, borderColor },
+        ticks: {
+          color: textColor,
+          font: { size: PRINT_FONTS.ticks },
+          autoSkip: src.autoSkip ?? key === "x",
+          maxRotation: src.maxRotation ?? (key === "x" ? 40 : 0),
+          minRotation: src.minRotation ?? 0,
+        },
+        title: {
+          color: textColor,
+          font: { size: PRINT_FONTS.title, weight: "600" },
+        },
+      };
+    };
 
     // Create type-specific options with a print-friendly palette
     const baseOptions = {
       responsive: false,
       animation: false,
       maintainAspectRatio: false,
+      devicePixelRatio: 1, // we control resolution via SCALE
+      font: { size: PRINT_FONTS.base },
       plugins: {
         legend: {
           display: !!instance.options?.plugins?.legend?.display,
           position: "top",
-          labels: { color: textColor },
+          labels: { color: textColor, font: { size: PRINT_FONTS.legend } },
         },
       },
     };
@@ -749,15 +817,15 @@
     // Add type-specific configurations
     if (type === "scatter") {
       const xType = instance.options?.scales?.x?.type || "time";
-      baseOptions.scales = { x: axis(xType), y: axis("linear") };
+      baseOptions.scales = { x: axis(xType, "x"), y: axis("linear", "y") };
     } else if (type === "boxplot") {
-      baseOptions.scales = { x: axis("category"), y: axis("linear") };
+      baseOptions.scales = { x: axis("category", "x"), y: axis("linear", "y") };
     } else if (type === "line") {
       const xType = instance.options?.scales?.x?.type || "time";
-      baseOptions.scales = { x: axis(xType), y: axis("linear") };
+      baseOptions.scales = { x: axis(xType, "x"), y: axis("linear", "y") };
     } else {
       // Default for bar charts and others
-      baseOptions.scales = { x: axis("category"), y: axis("linear") };
+      baseOptions.scales = { x: axis("category", "x"), y: axis("linear", "y") };
     }
 
     return new Promise((resolve) => {
@@ -838,6 +906,13 @@
   function cloneChartDataForPrint(src) {
     const d = cloneChartData(src);
     if (!d || !Array.isArray(d.datasets)) return d;
+    const scaleNumeric = (v, f, min) =>
+      typeof v === "number" ? Math.max(min, Math.round(v * f)) : v;
+    const mapScale = (v, f, min) =>
+      Array.isArray(v)
+        ? v.map((n) => scaleNumeric(n, f, min))
+        : scaleNumeric(v, f, min);
+    const POINT_SCALE = 1.25; // slightly larger points/lines for print
     d.datasets = d.datasets.map((ds) => {
       const cpy = { ...ds };
       cpy.backgroundColor = transformColorForPrint(cpy.backgroundColor);
@@ -846,6 +921,10 @@
         cpy.hoverBackgroundColor,
       );
       cpy.outlierColor = transformColorForPrint(cpy.outlierColor);
+      // Enlarge points/lines a bit for print readability
+      cpy.pointRadius = mapScale(cpy.pointRadius, POINT_SCALE, 5);
+      cpy.pointHoverRadius = mapScale(cpy.pointHoverRadius, POINT_SCALE, 6);
+      cpy.borderWidth = mapScale(cpy.borderWidth, POINT_SCALE * 0.9, 2);
       return cpy;
     });
     return d;
