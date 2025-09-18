@@ -22,16 +22,24 @@ const defaultBarColor = "#34d399"; // primary teal
 const selectedBarColor = "#f97316"; // distinctive orange
 const hoverBarColor = "#374151"; // hover teal
 
-const NON_RECOMMENDED_DAMAGES = [
-  "Burn",
-  "Burn - Engine",
-  "Burn - Interior",
-  "Mechanical",
-  "Missing/Altered VIN",
-  "Replaced VIN",
-  "Undercarriage",
-  "Water/Flood",
+// Less specific keywords, used with "contains" matching (case-insensitive)
+const NON_RECOMMENDED_DAMAGE_KEYWORDS = [
+  "burn",
+  "mechanical",
+  "missing",
+  "altered",
+  "vin",
+  "replaced",
+  "undercarriage",
+  "water",
+  "flood",
 ];
+
+function damageContainsAnyKeyword(damage, keywords) {
+  if (!damage) return false;
+  const text = String(damage).toLowerCase();
+  return keywords.some((kw) => text.includes(kw));
+}
 
 // Utility functions
 function groupByYear(data) {
@@ -127,6 +135,20 @@ function removeDuplicates(arr) {
   return uniqueArr;
 }
 
+// Initial data cleaning: remove N/A records and zero-dollar sales
+function isValidInitialRecord(car) {
+  const hasNA = (v) =>
+    typeof v === "string" && v.trim().toUpperCase() === "N/A";
+  // Drop zero or missing price
+  const validPrice =
+    typeof car.price === "number" && isFinite(car.price) && car.price > 0;
+  if (!validPrice) return false;
+  // Drop if any core identifiers are N/A
+  const naFields = [car.vin, car.model, car.damage, car.status, car.location];
+  if (naFields.some((v) => hasNA(v))) return false;
+  return true;
+}
+
 // Filter functions
 function renderFilterPanel() {
   const panel = document.getElementById("filter-panel");
@@ -196,9 +218,10 @@ function renderFilterPanel() {
       ? ["Normal wear", "Minor Dent/Scratches"]
       : (filterOptions.damage || []).filter((d) => {
           if (currentFilters.special === "nonRecommended") {
-            if (typeof d === "string" && d.toLowerCase().includes("burn"))
-              return false;
-            if (NON_RECOMMENDED_DAMAGES.includes(d)) return false;
+            return !damageContainsAnyKeyword(
+              d,
+              NON_RECOMMENDED_DAMAGE_KEYWORDS,
+            );
           }
           return true;
         });
@@ -297,7 +320,7 @@ function renderFilterPanel() {
     "display:flex;justify-content:center;align-items:center;gap:18px;margin-bottom:8px;width:100%;";
   // Check if we actually have any non-recommended damages in the data
   const hasNonRecommended = carData.some((c) =>
-    NON_RECOMMENDED_DAMAGES.includes(c.damage),
+    damageContainsAnyKeyword(c.damage, NON_RECOMMENDED_DAMAGE_KEYWORDS),
   );
 
   // ----- Button helper -----
@@ -339,7 +362,7 @@ function renderFilterPanel() {
     quickRow.appendChild(
       makeBtn(
         "Remove non-recommended damage",
-        `Removes ${NON_RECOMMENDED_DAMAGES.join(", ")}`,
+        `Removes ${NON_RECOMMENDED_DAMAGE_KEYWORDS.join(", ")}`,
         "nonRecommended",
       ),
     );
@@ -361,15 +384,12 @@ function applyFilters(data) {
   return data.filter((car) => {
     // ---- Special quick-filters first ----
     if (currentFilters.special === "nonRecommended") {
-      // Remove any damage containing "burn" (case-insensitive)
+      // Remove any damage containing any "non-recommended" keyword
       if (
-        typeof car.damage === "string" &&
-        car.damage.toLowerCase().includes("burn")
+        damageContainsAnyKeyword(car.damage, NON_RECOMMENDED_DAMAGE_KEYWORDS)
       ) {
         return false;
       }
-      // Remove other non-recommended damages as before
-      if (NON_RECOMMENDED_DAMAGES.includes(car.damage)) return false;
     }
 
     if (currentFilters.special === "clean") {
@@ -817,6 +837,8 @@ document.getElementById("file-input").addEventListener("change", function (e) {
       }
       // Remove duplicates from the loaded data
       carData = removeDuplicates(carData);
+      // Clean initial data: remove N/A entries and zero-dollar price
+      carData = carData.filter(isValidInitialRecord);
       // Populate filter options
       filterOptions.damage = getUnique(carData, "damage");
       filterOptions.status = getUnique(carData, "status");

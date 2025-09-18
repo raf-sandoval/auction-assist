@@ -100,49 +100,68 @@
 
   // PRINT FLOW
   async function onPrintClicked() {
-    // Ask for title first
-    const title = await showPrintSettingsModal().catch(() => null);
-    if (!title) return; // cancelled
+    // Decide whether platform/engine are needed (legacy scrapes)
+    const needs = computePreflightNeeds();
+    // Single unified modal: title + include graphs + (conditional) preflight
+    const pre = await showPrePrintModal(needs).catch(() => null);
+    if (!pre) return; // cancelled
+    const {
+      title,
+      includeGraphs = true,
+      vehicleType,
+      platformDefault,
+      engineSize,
+    } = pre;
     reportTitle = title || REPORT_TITLE_DEFAULT;
 
-    // Then calculate any missing estimates if needed
-    await runPreflightIfNeeded();
+    // Calculate any missing estimates if needed, using provided preflight
+    await runPreflightIfNeeded({ vehicleType, platformDefault, engineSize });
 
     ensurePrintRoot();
     const root = document.getElementById("print-root");
     root.innerHTML = "";
 
-    // Capture current visibility state and ensure all graphs are visible before taking snapshots
-    const originalVisibilityState = captureGraphsVisibilityState();
-    await ensureGraphsVisible();
-    await ensureChartsReady(); // make sure charts exist even if user never opened graphs
+    let charts = null;
+    if (includeGraphs) {
+      // Capture current visibility state and ensure all graphs are visible
+      const originalVisibilityState = captureGraphsVisibilityState();
+      await ensureGraphsVisible();
+      await ensureChartsReady(); // ensure charts exist even if never opened
+      charts = await snapshotCharts();
+      // Restore original visibility state
+      restoreGraphsVisibilityState(originalVisibilityState);
+    }
 
-    const charts = await snapshotCharts();
+    // Optional cover with graphs
+    if (includeGraphs && charts) {
+      const cover = document.createElement("div");
+      cover.className = "print-page";
+      cover.innerHTML = `
+        <div class="print-h1">${reportTitle}</div>
+        <div class="print-subtle">${new Date().toLocaleString()}</div>
 
-    // Restore original visibility state
-    restoreGraphsVisibilityState(originalVisibilityState);
-
-    // Cover page
-    const cover = document.createElement("div");
-    cover.className = "print-page";
-    cover.innerHTML = `
-      <div class="print-h1">${reportTitle}</div>
-      <div class="print-subtle">${new Date().toLocaleString()}</div>
-
-      <div class="print-section-title">Gráficos</div>
-      <div class="print-two-col">
-        ${imgOrPlaceholder(charts.bar, "Precios promedio por año")}
-      </div>
-      <div class="print-two-col" style="margin-top:10px">
-        ${imgOrPlaceholder(charts.priceHist, "Histograma de precios")}
-        ${imgOrPlaceholder(charts.mileageHist, "Histograma de millaje")}
-      </div>
-      <div class="print-two-col" style="margin-top:10px">
-        ${imgOrPlaceholder(charts.boxPlot, "Precios por tipo de daño")}
-        ${imgOrPlaceholder(charts.avgLine, "Promedio a lo largo del tiempo")}
-      </div>
-    `;
-    root.appendChild(cover);
+        <div class="print-section-title">Gráficos</div>
+        <div class="print-two-col">
+          ${imgOrPlaceholder(charts.bar, "Precios promedio por año")}
+        </div>
+        <div class="print-two-col" style="margin-top:10px">
+          ${imgOrPlaceholder(charts.scatter, "Precios vs Fecha")}
+        </div>
+        <div class="print-two-col" style="margin-top:10px">
+          ${imgOrPlaceholder(charts.priceHist, "Histograma de precios")}
+        </div>
+        <div class="print-two-col" style="margin-top:10px">
+          ${imgOrPlaceholder(charts.mileageHist, "Histograma de millaje")}
+        </div>
+        <div class="print-two-col" style="margin-top:10px">
+          ${imgOrPlaceholder(charts.boxPlot, "Precios por tipo de daño")}
+        </div>
+        <div class="print-two-col" style="margin-top:10px">
+          ${imgOrPlaceholder(charts.avgLine, "Promedio a lo largo del tiempo")}
+        </div>
+      `;
+      root.appendChild(cover);
+    }
 
     // Car pages
     const carsByVin = Object.create(null);
@@ -165,7 +184,7 @@
   }
 
   // PREFLIGHT (ask once, calculate for all missing)
-  async function runPreflightIfNeeded() {
+  async function runPreflightIfNeeded(preProvided) {
     const carsByVin = Object.create(null);
     (window.carData || []).forEach((c) => (carsByVin[c.vin] = c));
 
@@ -179,10 +198,15 @@
     }
     if (!toCalc.length) return;
 
-    // Decide if we need to ask for platform/engine, based on selected cars
-    const { askPlatform, askEngine } = computePreflightNeeds();
-    const { vehicleType, platformDefault, engineSize } =
-      await showPreflightModal({ askPlatform, askEngine });
+    // Use provided preflight settings from the unified modal
+    const vehicleType =
+      preProvided?.vehicleType ?? preflightDefaults.vehicleType;
+    const platformDefault =
+      preProvided?.platformDefault ?? preflightDefaults.platformDefault;
+    const engineSize =
+      preProvided && "engineSize" in preProvided
+        ? preProvided.engineSize
+        : preflightDefaults.engineSize;
 
     await Promise.allSettled(
       toCalc.map((car) =>
@@ -342,8 +366,8 @@
     });
   }
 
-  // Overload with options to conditionally ask for platform/engine
-  function showPreflightModal({ askPlatform = true, askEngine = true } = {}) {
+  // Unified pre-print modal: title + includeGraphs + conditional preflight
+  function showPrePrintModal({ askPlatform = true, askEngine = true } = {}) {
     return new Promise((resolve, reject) => {
       const overlay = document.createElement("div");
       overlay.className = "modal-overlay show";
@@ -357,7 +381,7 @@
       header.className = "modal-header";
       const title = document.createElement("h3");
       title.className = "modal-title";
-      title.textContent = "Parámetros para calcular (una vez)";
+      title.textContent = "Configuración del reporte";
       const closeBtn = document.createElement("button");
       closeBtn.className = "modal-close";
       closeBtn.textContent = "Cancelar";
@@ -372,13 +396,29 @@
       body.className = "modal-body";
       body.innerHTML = `
         <div class="modal-section">
+          <div class="modal-field" style="margin-bottom:10px">
+            <label for="pf-title">Título del reporte</label>
+            <input id="pf-title" type="text" placeholder="Ej. ${
+              REPORT_TITLE_DEFAULT
+            }" value="${(reportTitle || REPORT_TITLE_DEFAULT)
+              .toString()
+              .replace(/"/g, "&quot;")}"/>
+          </div>
+          <div class="modal-field" style="margin-bottom:10px">
+            <label style="display:flex;align-items:center;gap:8px;">
+              <input id="pf-include-graphs" type="checkbox" checked />
+              Incluir gráficos en el PDF
+            </label>
+          </div>
           <div class="modal-row">
             <div class="modal-field">
               <label for="pf-veh-type">Tamaño del vehículo</label>
               <select id="pf-veh-type">
                 ${VEHICLE_OPTIONS.map(
                   (o) =>
-                    `<option value="${o.key}" ${o.key === preflightDefaults.vehicleType ? "selected" : ""}>${o.label}</option>`,
+                    `<option value="${o.key}" ${
+                      o.key === preflightDefaults.vehicleType ? "selected" : ""
+                    }>${o.label}</option>`,
                 ).join("")}
               </select>
             </div>
@@ -405,9 +445,9 @@
               askEngine
                 ? `<div class="modal-field">
               <label for="pf-engine">Tamaño de motor (L) (opcional)</label>
-              <input id="pf-engine" type="number" step="0.1" min="0.6" placeholder="Ej. 1.5" value="${
-                preflightDefaults.engineSize || ""
-              }" />
+              <input id="pf-engine" type="number" step="0.1" min="0.6"
+                placeholder="Ej. 1.5"
+                value="${preflightDefaults.engineSize || ""}" />
             </div>`
                 : ""
             }
@@ -435,27 +475,41 @@
         reject(new Error("cancelled"));
       };
       document.getElementById("pf-continue").onclick = () => {
+        const titleInput = document.getElementById("pf-title");
+        const includeGraphsEl = document.getElementById("pf-include-graphs");
         const vehicleType = document.getElementById("pf-veh-type").value;
         const platformDefault = (() => {
-          if (!askPlatform) return undefined;
           const el = document.getElementById("pf-platform");
-          return (el && el.value) || "copart";
+          if (!el) return undefined;
+          return el.value || "copart";
         })();
         const engineSize = (() => {
-          if (!askEngine) return "";
           const el = document.getElementById("pf-engine");
-          const raw = el ? el.value : "";
+          if (!el) return "";
+          const raw = el.value;
           return raw !== "" ? Number(raw) : "";
         })();
 
         preflightDefaults.vehicleType = vehicleType;
-        if (askPlatform) preflightDefaults.platformDefault = platformDefault;
-        if (askEngine) preflightDefaults.engineSize = engineSize;
+        if (platformDefault !== undefined)
+          preflightDefaults.platformDefault = platformDefault;
+        if (engineSize !== undefined) preflightDefaults.engineSize = engineSize;
 
         cleanup();
-        resolve({ vehicleType, platformDefault, engineSize });
+        resolve({
+          title: titleInput?.value || REPORT_TITLE_DEFAULT,
+          includeGraphs: !!includeGraphsEl?.checked,
+          vehicleType,
+          platformDefault,
+          engineSize,
+        });
       };
     });
+  }
+
+  // Backward-compat: keep for any external callers if present (unused here)
+  function showPreflightModal(opts) {
+    return showPrePrintModal(opts);
   }
 
   function callEstimateAPI({ car, vehicleType, platformDefault, engineSize }) {
