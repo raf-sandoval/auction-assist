@@ -3,3 +3,4 @@ node_modules
 bun.lock
 wrangler.toml
 kv_data.json
+Demo.json
