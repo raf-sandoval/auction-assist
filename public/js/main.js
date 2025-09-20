@@ -51,6 +51,18 @@ function groupByYear(data) {
   return map;
 }
 
+// Exclude Hawaii/Alaska by location
+function isExcludedStateLocation(location) {
+  if (!location) return false;
+  const s = String(location);
+  // Full names
+  if (/\bHawaii\b/i.test(s) || /\bAlaska\b/i.test(s)) return true;
+  // State abbreviations as standalone tokens (e.g., ", HI", " AK -", "(AK)")
+  if (/(^|[\s,;|()\-])HI([\s,;|()\-]|$)/i.test(s)) return true;
+  if (/(^|[\s,;|()\-])AK([\s,;|()\-]|$)/i.test(s)) return true;
+  return false;
+}
+
 function average(arr) {
   if (!arr.length) return 0;
   return arr.reduce((sum, c) => sum + (c.price || 0), 0) / arr.length;
@@ -143,6 +155,8 @@ function isValidInitialRecord(car) {
   const validPrice =
     typeof car.price === "number" && isFinite(car.price) && car.price > 0;
   if (!validPrice) return false;
+  // Exclude impractical locations
+  if (isExcludedStateLocation(car.location)) return false;
   // Drop if any core identifiers are N/A
   const naFields = [car.vin, car.model, car.damage, car.status, car.location];
   if (naFields.some((v) => hasNA(v))) return false;
@@ -382,6 +396,8 @@ function renderFilterPanel() {
 
 function applyFilters(data) {
   return data.filter((car) => {
+    // Always exclude HI/AK
+    if (isExcludedStateLocation(car.location)) return false;
     // ---- Special quick-filters first ----
     if (currentFilters.special === "nonRecommended") {
       // Remove any damage containing any "non-recommended" keyword
